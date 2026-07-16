@@ -7,7 +7,7 @@
 ## نصب
 
 ```bash
-cd && sudo git clone https://github.com/<YOUR-USERNAME>/RealityGhostPro.git && cd RealityGhostPro && sudo chmod +x RealityGhostPro.sh && sudo ./RealityGhostPro.sh install
+cd && sudo git clone https://github.com/sheshocked/RealityGhostPro.git && cd RealityGhostPro && sudo chmod +x RealityGhostPro.sh && sudo ./RealityGhostPro.sh install
 ```
 
 پیش‌نیاز: یه دامنه که رکورد A ش مستقیم (بدون CDN، ابر خاکستری/DNS-only) به IP سرورت اشاره کنه.
