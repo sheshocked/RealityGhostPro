@@ -21,7 +21,7 @@ DOMAIN=sub.example.com EMAIL=you@example.com sudo -E ./RealityGhostPro.sh instal
 ## مدیریت
 
 ```bash
-sudo realityghost manage
+sudo ./RealityGhostPro.sh manage
 ```
 
 منوی مدیریت شامل: نمایش ساب‌اسکریپشن/QR، rotate امن/سخت، تعویض IP، تعویض UUID، سوییچ ترنسپورت پیش‌فرض، health check و آنینستال.
