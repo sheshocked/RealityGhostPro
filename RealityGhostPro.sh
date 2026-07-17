@@ -7,7 +7,7 @@ BOLD='\033[1m'; NC='\033[0m'
 INFO="${CYAN}[ℹ]${NC}"; OK="${GREEN}[✓]${NC}"; ERR="${RED}[✗]${NC}"; WARN="${YELLOW}[⚠]${NC}"
 
 DOMAIN="${DOMAIN:-}"; EMAIL="${EMAIL:-}"
-SUB_PORT="8443"; XRAY_TCP_PORT="443"
+SUB_PORT="443"; XRAY_TCP_PORT="8443"
 INSTALL_DIR="/usr/local/share/xray"
 CONFIG_DIR="/usr/local/etc/xray"
 NGINX_CONF_DIR="/etc/nginx"
