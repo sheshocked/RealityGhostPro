@@ -1,128 +1,137 @@
 # 👻 RealityGhost PRO
 
-**Fork of [ghostmcf/RealityGhost](https://github.com/ghostmcf/RealityGhost) — Rewritten for zero‑config production use.**
+**یه فورک از [ghostmcf/RealityGhost](https://github.com/ghostmcf/RealityGhost) که بکلی بازنویسی شده — نصب خودکار، بدون دخالت کاربر.**
 
-یک اسکریپت **تمام‌اتوماتیک** برای نصب و مدیریت Xray VLESS+Reality. فقط دامنه رو بده، بقیه رو خودش انجام میده.
+میخوای Xray VLESS+Reality رو سرورت بالا بیاری؟ فقط دامنه بده، بقیه با من.
 
-> 🇮🇷 طراحی شده برای شرایط فیلترینگ ایران، بر اساس مشاهدات میدانی ۱۰۰+ سرور
-
----
-
-## 🔄 تفاوت با RealityGhost اصلی
-
-پروژه [RealityGhost](https://github.com/ghostmcf/RealityGhost) یک پایه محکم با ایده‌های خوب (SAFE rotation، dual transport) بود. ما رفتیم سراغ **سادگی و اتوماتیک‌سازی**:
-
-| ویژگی | RealityGhost اصلی | RealityGhost PRO |
-|-------|------------------|-----------------|
-| نصب | دستی — باید پورت، SSL، NGINX رو چک کنی | **یک دستور** — همه چیز خودکار |
-| تشخیص لوکیشن | ❌ | ✅ خودکار با پرچم 🇱🇻 |
-| فایروال | ❌ دستی | ✅ **خودکار** iptables/UFW |
-| SSL | دستی با certbot | ✅ خودکار + تمدید اتوماتیک |
-| Conflict پورت | ❌ کاربر باید حل کنه | ✅ **خودکار تشخیص و رفع** |
-| منو | فارسی | ✅ **انگلیسی** |
-| بنر | متن ساده | ✅ **Figlet 3D** بنفش |
+> 🇮🇷 واسه شرایط ایران ساخته شده. ۱۰۰+ تا سرور واقعی روش تست شده.
 
 ---
 
-## ✨ چیزای جدید PRO
+## 🔄 چه فرقی با RealityGhost اصلی داره؟
 
-| # | قابلیت |
+پروژه [RealityGhost](https://github.com/ghostmcf/RealityGhost) فکر اصلیش خوب بود (SAFE rotation و dual transport) ولی اومدیم سادش کردیم و همه چی رو اتوماتیک：
+
+| چی | RealityGhost اصلی | RealityGhost PRO |
+|----|------------------|-----------------|
+| نصب | باید خودت پورت، SSL، NGINX رو چک کنی | **یک دستور** — بقیه با من |
+| تشخیص کشور | نداشت | ✅ خودکار میزنه پرچمت 🇱🇻 |
+| فایروال | باید دستی باز کنی | ✅ **خودکار** باز میکنه |
+| SSL | دستی با certbot | ✅ خودکار میگیره + تمدید اتوماتیک |
+| پورت اشغال | ارور میداد باید خودت حل میکردی | ✅ **خودکار kill میکنه** |
+| زبان منو | فارسی | ✅ **انگلیسی** (بین‌المللی) |
+| بنر | متن ساده | ✅ **Figlet 3D** بنفش خوشگل |
+
+---
+
+## ✨ چیزایی که PRO داره
+
+| # | چی هست |
 |---|--------|
-| 🚀 | **نصب یک‌دستوری:** `bash script.sh install your-domain.com` — تموم |
-| 🔐 | **SSL خودکار** با certbot + cron تمدید |
-| 🌐 | **۶ SNI گوگل** برای تنوع camouflage |
-| 🔄 | **چرخش خودکار** هر ۳ روز (shortId + fingerprint) بدون قطعی |
-| 📊 | **پنل زنده** با آمار منابع، مصرف، وضعیت سرویس‌ها |
-| 📥 | **ساب‌اسکریپشن** اتوماتیک (base64) |
-| 🛡️ | **فایروال خودکار** باز کردن پورت‌های 80, 443, 8443 |
-| 🤖 | **ربات تلگرام** مدیریت کاربران (اختیاری) |
-| 🎨 | **بنر 3D بنفش** با figlet |
-| 🔧 | **Self-Heal:** مانیتور هر ۳ ثانیه چک میکنه |
+| 🚀 | **نصب یک‌دستوری:** `bash script.sh install domain.com email@mail.com` — تموم |
+| 🔐 | **SSL خودکار** با certbot + تمدید هر ۳ ماه |
+| 🌐 | **۶ تا SNI گوگل** که DPI نره تو شک |
+| 🔄 | **چرخش خودکار** هر ۳ روز (shortId عوض میشه) بدون قطعی کلاینت |
+| 📊 | **پنل زنده** — مصرف رم، سیپیو، دیسک، وضعیت سرویس‌ها |
+| 📥 | **ساب‌اسکریپشن** لینک مستقیم (base64) |
+| 🛡️ | **فایروال خودکار** پورت‌های 80, 443, 8443 |
+| 🤖 | **ربات تلگرام** برای مدیریت کاربرا (اگه بخوای) |
+| 🎨 | **بنر بنفش 3D** با figlet |
+| 🔧 | **مانیتور لحظه‌ای** هر ۳ ثانیه چک میکنه همه چی اوکیه |
 
 ---
 
-## 🧠 چرا Reality فیلتر نمیشه؟
+## 🧠 چرا اصلاً فیلتر نمیشه؟
 
-DPI ایران چهار چیز رو چک میکنه:
+خب ببین. DPI یا همون سیستم فیلترینگ ایران چهار تا چیز رو چک میکنه:
 
-1. **TLS Fingerprint (JA3)** — Xray میزنه `fp=chrome` → درست مثل مرورگر واقعی
-2. **SNI** — کانکشن شما میره به **دامنه‌های واقعی گوگل** (gstatic.com, googleapis.com)
-3. **الگوی اتصال** — Reality از **TLS handshake واقعی** سایت مقصد استفاده میکنه
-4. **پروتکل** — VLESS + Reality = **تشخیص‌ناپذیر**، هیچ بایت پروکسی توی وایر فرمت نیست
+1. **TLS Fingerprint (JA3)** — کلاینتت چه شکلی handshake میزنه
+2. **SNI** — کدوم دامنه داری باهاش حرف میزنی
+3. **الگوی اتصال** — سرعت، اندازه پکت‌ها، زمان‌بندی
+4. **پروتکل** — بوی Shadowsocks یا V2Ray میده یا نه
 
-> **نکته کلیدی از RealityGhost اصلی:** endpointهایی که بیش از ۷۲ ساعت تغییر نکنن، تدریجاً شناسایی میشن. راه‌حل: چرخش دوره‌ای shortId + fingerprint بدون قطع کردن کلاینت‌ها.
+### Reality چطور اینا رو دور میزنه؟
+
+1. **Fingerprint** → Xray رو میذاریم `fp=chrome` → ینی دقیقاً مثل مرورگر کروم واقعی handshake میزنه. DPI میگه "آها این کرومه"
+2. **SNI** → کانکشن تو میره سمت **دامنه‌های واقعی گوگل** (gstatic.com, googleapis.com). فیلترچی میبینه www.gstatic.com، میگه "اوکی گوگله"
+3. **الگو** → Reality از **TLS Handshake واقعی همون سایت** استفاده میکنه. سرور تو فقط سوارش میشه. هیچ رفتار عجیبی تو وایر نیست
+4. **پروتکل** → VLESS + Reality تو وایر فرمت هیچ بایت اضافه‌ای نداره. دقیقاً شبیه TLS معمولیه
+
+### یه نکته مهم:
+
+> طبق تحقیقات ghostmcf، اگه endpoint بیشتر از ۷۲ ساعت تغییر نکنه، DPI تدریجاً میشناسدش و میندازتش.
+
+**راه‌حل:** هر ۳ روز shortId و fingerprint عوض میشه. به این میگن SAFE rotation — چون کلاینت‌های فعال قطع نمیشن.
 
 ---
 
-## ⚡ نصب
+## ⚡ چجوری نصب کنم؟
 
 ```bash
-# یک دستور — همه چیز خودکار
-curl -sL https://github.com/sheshocked/RealityGhostPro/raw/main/RealityGhostPro.sh | bash -s install
+# یه خط — بقیه با من
+bash <(curl -sL https://github.com/sheshocked/RealityGhostPro/raw/main/RealityGhostPro.sh) install your-domain.com your@email.com
 ```
 
-یا دستی:
+اگه دوست داری با پرامپت:
 ```bash
 git clone https://github.com/sheshocked/RealityGhostPro.git
-cd RealityGhostPro
-chmod +x RealityGhostPro.sh
+cd RealityGhostPro && chmod +x RealityGhostPro.sh
 ./RealityGhostPro.sh install
+# فقط بزن domain و email — بقیه خودکار
 ```
-
-**حین نصب فقط دامنه و ایمیل رو وارد کن — بقیه خودکاره.**
 
 ---
 
-## 🎮 مدیریت
+## 🎮 چجوری مدیریت کنم؟
 
 ```bash
 ./RealityGhostPro.sh manage
 ```
 
 منو:
-1. 📋 Connection Info
-2. ⚙️ Config Manager
-3. 🔌 Port Manager
-4. 🔄 Rotate Short IDs
-5. 🏗️ Rebuild Sub & Panel
-6. 🔄 Restart Services
-7. 🤖 Bot
-8. 🔄 Update
-9. 🗑️ Uninstall
+1. 📋 Connection Info — اطلاعات اتصال
+2. ⚙️ Config Manager — مدیریت کانفیگ
+3. 🔌 Port Manager — باز و بستن پورت
+4. 🔄 Rotate Short IDs — چرخش دستی SID
+5. 🏗️ Rebuild Sub & Panel — بازسازی ساب و پنل
+6. 🔄 Restart Services — ری‌استارت سرویس‌ها
+7. 🤖 Bot — مدیریت ربات تلگرام
+8. 🔄 Update — آپدیت از گیتهاب
+9. 🗑️ Uninstall — حذف کامل
 0. ❌ Exit
 
 ---
 
-## 🏗️ معماری
+## 🏗️ معماری چجوریه؟
 
 ```
-Client → TLS (Google SNI)
+Client → TLS (با SNI گوگل)
   → NGINX :443 (ssl_preread)
     → Xray Reality :8444 (VLESS)
-
-Panel/Sub:
+    
+پنل و ساب:
   → NGINX :8443 → /status/ + /sub/
-
-Monitor:
-  → systemd → health check هر ۳ ثانیه
+  
+مانیتور:
+  → systemd → هر ۳ ثانیه چک میکنه همه چی اوکیه
 ```
 
 ---
 
 ## 🔒 امنیت
 
-- هیچ اطلاعات شخصی تو فایل‌های پابلیک نیست
-- UUID + ShortId رندوم برای هر نصب
-- فایروال خودکار
-- SSL با Let's Encrypt + auto-renew
+- هیچکدوم از اطلاعات شخصی تو فایل‌های عمومی گیتهاب نیست
+- UUID + ShortId برای هر نصب رندوم میزنه
+- فایروال خودکار باز میشه
+- SSL با Let's Encrypt + تمدید خودکار
 
 ---
 
-## 📜 License
+## 📜 مجوز
 
-MIT — Forked from [ghostmcf/RealityGhost](https://github.com/ghostmcf/RealityGhost)
+MIT — فورک شده از [ghostmcf/RealityGhost](https://github.com/ghostmcf/RealityGhost)
 
-## 🙏 Credits
+## 🙏 تشکر
 
-- **[ghostmcf](https://github.com/ghostmcf)** — RealityGhost اصلی و تحقیقات DPI
-- **[XTLS/Xray-core](https://github.com/XTLS/Xray-core)** — موتور اصلی پروکسی
+- **[ghostmcf](https://github.com/ghostmcf)** — برای RealityGhost اصلی و تحقیقات DPI
+- **[XTLS/Xray-core](https://github.com/XTLS/Xray-core)** — موتور اصلی
