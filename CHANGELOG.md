@@ -1,61 +1,76 @@
-## v6.0 (2026-07-17) — 🚀 High-scale optimization + Anti-DPI + Best DNS
+## v6.1 (2026-07-17) — 🎨 پنل حرفه‌ای، رفع باگ‌ها، Quad9 DNS
 
-### 🔥 Performance for 50k+ users
-- **Xray concurrency=16** — parallel connection handling
-- **TCP MTU probing=1** — auto path MTU discovery
-- **TCP slow_start_after_idle=0** — keep connections warm
-- **TCP autocorking=0** — reduce latency for small packets
-- **TCP no_metrics_save=1** — fresh connection metrics each time
-- **Max syn backlog=262144** — handle connection storms
-- **Max tw buckets=4M** — handle millions of concurrent connections
-- **Somaxconn=131072** — max socket listen backlog
-- **NF conntrack=4M** — track millions of connections
+### 📱 پنل جدید
+- **بازنویسی کامل CSS** — تم طوسی تیره (نه مشکی)، ریسپانسیو
+- **auto-fit grid** — دیگه بریک‌پوینت دستی نمیخواد، خودش تنظیم میشه
+- **فونت بزرگتر** — خوندن توی موبایل راحت‌تر
+- **کامپکت‌تر** — Quick Links + Sub هم‌جا شدن
 
-### 🛡️ Anti-DPI improvements
-- **Xray allocate concurrency=16** — spread connections across workers
-- **Sniffing routeOnly=true** — route traffic more efficiently
-- **Auto best DNS** by location: Shecan (Iran), Yandex (Russia), 114DNS (China), Cloudflare (global)
-- **DNS backup** — always fallback to 8.8.8.8
+### 🐛 رفع باگ‌ها
+- **🔗 Connections صفر بود** — مانیتور دنبال پورت اشتباه میگشت + کپ ۱۰۰۰ داشت → الان **۱۰k+** واقعی
+- **📊 Traffic گرید نداشت** — با `auto-fit` درست شد
+- **🌍 Network کار نمیکرد** — فیلدها مقدار نداشتن
+- **📥 Sub pbk اشتباه بود** — `xray x25519` خروجیش `Password` هست نه `Public` → pbk=shortId میرفت
 
-### ⚡ Speed improvements
-- **BBR congestion control** with fq qdisc
-- **TCP fastopen=3** — 1-RTT handshake for repeat connections
-- **Increased buffer sizes** for high-bandwidth flows
-- **NGINX LimitNOFILE=1048576** — never run out of file descriptors
+### 🌐 DNS
+- **Quad9** — `9.9.9.9`, `9.9.9.12`, `149.112.112.112`
 
-### 📦 Other
-- Script optimized with self-healing DNS
-- v6.0 branding everywhere
+## v6.0 (2026-07-17) — 🚀 بهینه‌سازی حرفه‌ای + ضد فیلتر + DNS هوشمند
 
-## v5.2 (2026-07-17) — 🎨 Clean panel redesign + Responsive fix
+### 🔥 برای ۵۰ هزار کاربر
+- **Xray concurrency=16** — مدیریت موازی اتصالات
+- **TCP MTU probing=1** — کشف خودکار MTU مسیر
+- **TCP slow_start_after_idle=0** — نگه داشتن کانکشن‌های گرم
+- **TCP autocorking=0** — کاهش تأخیر بسته‌های کوچیک
+- **Max syn backlog=262144** — تحمل هجوم اتصال
+- **Max tw buckets=4M** — میلیون‌ها کانکشن همزمان
+- **Somaxconn=131072** — بیشینه بک‌لاگ socket
+- **NF conntrack=4M** — ردیابی میلیون‌ها اتصال
 
-### 🎨 Panel fixes
-- **Resources bars** — RAM/CPU/Disk with percentage bars
-- **Traffic stats** — Today/Month/Total with auto-format (B/KB/MB/GB/TB)
-- **Load average** — 1m/5m/15m display
-- **Responsive** — Desktop 6-col, Tablet 3-col, Mobile 2-col
-- **Quick Copy** — 3 shortcut buttons for fast config copy
+### 🛡️ ضد فیلتر
+- **بهترین DNS خودکار** بر اساس لوکیشن: Shecan (ایران)، Yandex (روسیه)، 114DNS (چین)، Cloudflare (بقیه)
+- **Sniffing routeOnly** — مسیریابی هوشمند ترافیک
+- **DNS backup** — همیشه DNS جایگزین داره
 
-## v5.1 (2026-07-17) — 🏗️ Architecture rewrite + Auto setup
+### ⚡ سرعت
+- **BBR** + fq qdisc
+- **TCP fastopen=3** — دست‌دهی ۱-RTT برای اتصالات تکراری
+- **بافرهای بزرگ** برای پهنای باند بالا
+- **NGINX LimitNOFILE=1048576**
 
-### 🏗️ Architecture changes
-- **Direct Xray on :443** — removed NGINX stream bottleneck
-- **Panel on :8443** — NGINX serves panel + sub only
-- **worker_connections 65535** — handle massive concurrent traffic
-- **Rate limiting** — protect against abuse
-- **epoll + multi_accept** — high-performance event loop
+## v5.2 (2026-07-17) — 🎨 بازطراحی پنل
 
-### 🎯 Quick entry
-- `rgp` command — type it anywhere, goes straight to menu
-- `bash RealityGhostPro.sh p` — same thing
+### 🎨 اصلاحات پنل
+- **نوارهای درصدی** RAM/CPU/Disk
+- **آمار ترافیک** — امروز/ماه/کل با فرمت خودکار
+- **Load average** — 1m/5m/15m
+- **ریسپانسیو** — دسکتاپ ۶ ستون، تبلت ۳، موبایل ۲
+- **کپی سریع** — ۳ دکمه میانبر
 
-## v5.0 (2026-07-17) — 🎯 Fully automatic install + Persian UI
+## v5.1 (2026-07-17) — 🏗️ تغییر معماری + نصب خودکار
 
-### 🔄 Major changes
-- **Fully automatic install** — just provide domain + email, everything else auto
-- **Self-healing** — auto kill port conflicts, auto fix DNS, auto configure everything
-- **Persian UI** — all menus, messages, and README in Farsi
-- **Zero prompts** — no questions asked during installation
+### 🏗️ معماری جدید
+- **Xray مستقیم روی :443** — حذف NGINX stream (bottleneck بود)
+- **پنل روی :8443** — NGINX فقط پنل + ساب
+- **worker_connections 65535**
+- **Rate limiting** — محافظت در برابر حمله
+- **epoll + multi_accept**
+
+### 🎯 ورود سریع
+- `rgp` — هر جا بزنی میری تو منو
+
+## v5.0 (2026-07-17) — 🎯 نصب کاملاً خودکار
+
+### 🔄 تغییرات بزرگ
+- **نصب کاملاً خودکار** — فقط domain + email بده، بقیه با اسکریپت
+- **Self-healing** — کشتن خودکار پورت‌های اشغال، فیکس DNS، تنظیم خودکار همه چیز
+- **منوی انگلیسی** (دلیبریت — توی ترمینال تمیزتر)
+- **README فارسی** خودمونی
+- **بدون سوال** — هیچ سوالی حین نصب پرسیده نمیشه
+
+---
+
+## v4.2 (2026-07-17) — 🆔 UUID + ShortId یکتا + 🚀 بهینه‌سازی + 🤖 ربات
 
 # 📋 CHANGELOG — RealityGhost PRO
 
