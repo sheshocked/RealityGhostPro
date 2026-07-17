@@ -467,17 +467,17 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--b);color:var(--t)
 </div>
 
 <div class="g g2">
+<div><div class=sec style=margin-bottom:12px><div class=sec-h><h2>🔗 Configs</h2><button class=ci-b onclick=cpA() style=padding:3px8px>📋 All</button></div>
+<div class=cl id=cf></div></div>
+<div class=sec><div class=sec-h><h2>📄 Subscription</h2></div>
+<div style=display:flex;gap:5px><input readonly id=su value="—" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:7px 8px;color:var(--t2);font-size:9px;direction:ltr;font-family:monospace" onclick=this.select()><button class=ci-b onclick="navigator.clipboard.writeText(document.getElementById('su').value);to('✓ Copied')">Copy</button></div>
+</div></div>
+
 <div class=sec><div class=sec-h><h2>🔧 Services</h2><span style=font-size:8px;color:var(--t2) id=svc></span></div>
 <div class=sv id=sv></div>
 <div class=sec-h style=margin:14px 0 8px><h2>⚡ Actions</h2></div>
 <div class=qa><span class=qab onclick=cpA()>📋 Copy All</span><span class=qab onclick=window.open('https://'+D+'/sub')>📥 Sub</span><span class=qab onclick=window.location.reload()>🔄 Refresh</span></div>
-<div class=sec-h style=margin:14px 0 8px><h2>📄 Subscription</h2></div>
-<div style=display:flex;gap:5px><input readonly id=su value="—" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:7px 8px;color:var(--t2);font-size:9px;direction:ltr;font-family:monospace" onclick=this.select()><button class=ci-b onclick="navigator.clipboard.writeText(document.getElementById('su').value);to('✓ Copied')">Copy</button></div>
-</div>
-
-<div class=sec><div class=sec-h><h2>🔗 Configs</h2><button class=ci-b onclick=cpA() style=padding:3px8px>📋 All</button></div>
-<div class=cl id=cf></div></div>
-</div>
+</div></div>
 
 <div class="g g4">
 <div class=sec><div class=sec-h><h2>🏷️ Quick Links</h2></div>
