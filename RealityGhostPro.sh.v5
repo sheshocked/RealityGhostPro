@@ -1,5 +1,5 @@
 #!/bin/bash
-# RealityGhost PRO v6.0 — Fully automatic Xray VLESS+Reality installer
+# RealityGhost PRO v5.0 — Fully automatic Xray VLESS+Reality installer
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; PURPLE='\033[0;35m'; WHITE='\033[1;37m'
@@ -286,8 +286,7 @@ configure_xray() {
         "shortIds": [${sids_json}]
       }
     },
-    "sniffing": { "enabled": true, "destOverride": ["http", "tls", "quic"], "routeOnly": true },
-    "allocate": { "strategy": "always", "refresh": 5, "concurrency": 8 }
+    "sniffing": { "enabled": true, "destOverride": ["http", "tls", "quic"] }
   }],
   "outbounds": [{ "protocol": "freedom", "settings": {} }]
 }
@@ -420,7 +419,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--t)}
 <div class="sv" id=qck></div></div>
 </div></div>
 
-<div class=ft>RG PRO v6.0</div></div>
+<div class=ft>RG PRO v5.1</div></div>
 <div class=tst id=t></div>
 
 <script>
@@ -752,13 +751,6 @@ main_install() {
     iptables -C INPUT -p tcp --dport "$p" -j ACCEPT 2>/dev/null || iptables -A INPUT -p tcp --dport "$p" -j ACCEPT
   done
   netfilter-persistent save 2>/dev/null
-  # v6.0: Optimize DNS
-  optimize_dns
-  # v6.0: Apply high-scale kernel params
-  sysctl -w net.core.somaxconn=131072 2>/dev/null
-  sysctl -w net.ipv4.tcp_max_syn_backlog=262144 2>/dev/null
-  sysctl -w net.ipv4.tcp_max_tw_buckets=4000000 2>/dev/null
-  # Restart
   systemctl restart nginx xray realityghost-monitor
   echo -e "${GREEN}╔═══════════════════════════════╗${NC}"
   echo -e "${GREEN}║  نصب با موفقیت تموم شد! 🎉   ║${NC}"
