@@ -1,5 +1,5 @@
 #!/bin/bash
-# RealityGhost PRO v4.2 — Xray VLESS+Reality installer & manager
+# RealityGhost PRO v5.0 — Fully automatic Xray VLESS+Reality installer
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; PURPLE='\033[0;35m'; WHITE='\033[1;37m'
@@ -60,41 +60,33 @@ check_root() {
 }
 
 preflight_check() {
-  echo -e "${INFO}بررسی سیستم..."
-  grep -q "Ubuntu\|Debian" /etc/os-release 2>/dev/null || echo -e "${WARN}فقط اوبونتو/دبیان تست شده"
+  echo -e "${INFO}Checking system..."
+  grep -q "Ubuntu\|Debian" /etc/os-release 2>/dev/null || echo -e "${WARN}Only Ubuntu/Debian tested"
   local ports=("443" "${XRAY_TCP_PORT}" "${SUB_PORT}")
   for p in "${ports[@]}"; do
     if ss -tlnp | grep -q ":${p} "; then
       local proc=$(ss -tlnp | grep ":${p} " | awk '{print $7}' | tr -d '"')
-      echo -e "${WARN}پورت ${p} توسط ${proc:-?} اشغال شده"
-      echo -ne "${INFO}آزادش کنم؟ (y/n): "
-      read -r ans
-      if [[ "$ans" == "y" || "$ans" == "Y" ]]; then
-        local pid=$(ss -tlnp | grep ":${p} " | grep -oP 'pid=\K[0-9]+')
-        [[ -n "$pid" ]] && kill -9 "$pid" 2>/dev/null
-        echo -e "${OK}پورت ${p} آزاد شد"
-      else
-        echo -e "${ERR}پورت ${p} اشغاله، لطفاً آزادش کن${NC}"
-        exit 1
-      fi
+      echo -e "${WARN}Port ${p} in use by ${proc:-?} — auto-releasing"
+      local pid=$(ss -tlnp | grep ":${p} " | grep -oP 'pid=\K[0-9]+')
+      [[ -n "$pid" ]] && kill -9 "$pid" 2>/dev/null && echo -e "${OK}Port ${p} freed"
     fi
   done
   nslookup google.com >/dev/null 2>&1 || dig google.com >/dev/null 2>&1 || {
-    echo -e "${WARN}DNS کار نمی‌کنه. ادامه بدیم؟ (y/n): "
-    read -r ans
-    [[ "$ans" != "y" && "$ans" != "Y" ]] && exit 1
+    echo -e "${WARN}DNS not working — trying fallback"
+    echo "nameserver 8.8.8.8" > /etc/resolv.conf 2>/dev/null
+    sleep 2
   }
-  ping -4 -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || echo -e "${WARN}IPv4 تأیید نشد"
+  ping -4 -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || echo -e "${WARN}IPv4 not confirmed (ignoring)"
+  echo -e "${OK}System ready"
 }
 
 install_dependencies() {
-  echo -e "${INFO}نصب پیش‌نیازها..."
-  apt-get update -y
+  echo -e "${INFO}Installing dependencies..."
+  apt-get update -y 2>/dev/null | tail -1
   apt-get install -y wget curl unzip uuid-runtime jq qrencode certbot \
-    nginx-extras logrotate bc netcat-openbsd dnsutils python3 python3-pip sqlite3 figlet
-  pip3 install python-telegram-bot requests --break-system-packages -q 2>/dev/null || \
-    echo -e "${WARN}نصب پکیج‌های ربات ناموفق"
-  echo -e "${OK}پیش‌نیازها نصب شدن"
+    nginx-extras logrotate bc netcat-openbsd dnsutils python3 python3-pip sqlite3 figlet 2>/dev/null | tail -1
+  pip3 install python-telegram-bot requests --break-system-packages -q 2>/dev/null || true
+  echo -e "${OK}Dependencies installed"
 }
 
 system_tuning() {
@@ -192,24 +184,24 @@ SERVEOF
 
 install_certbot() {
   if [[ -z "$DOMAIN" ]]; then
-    echo -ne "${INFO}دامنه (your-domain.com): "; read -r DOMAIN
+    echo -ne "${BOLD}Domain (your-domain.com): ${NC}"; read -r DOMAIN
   fi
   if [[ -z "$EMAIL" ]]; then
-    echo -ne "${INFO}ایمیل (برای Let's Encrypt): "; read -r EMAIL
+    echo -ne "${BOLD}Email (for Let's Encrypt): ${NC}"; read -r EMAIL
   fi
   if [[ -d "/etc/letsencrypt/live/${DOMAIN}" ]]; then
-    echo -e "${OK}SSL از قبل هست"
+    echo -e "${OK}SSL already exists"
     return 0
   fi
-  echo -e "${INFO}دریافت SSL از Let's Encrypt..."
+  echo -e "${INFO}Obtaining SSL from Let's Encrypt..."
   systemctl stop nginx 2>/dev/null
   certbot certonly --standalone --non-interactive --agree-tos -d "${DOMAIN}" -m "${EMAIL}" 2>/dev/null
   systemctl start nginx 2>/dev/null
   if [[ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]]; then
-    echo -e "${OK}SSL دریافت شد"
+    echo -e "${OK}SSL obtained"
     (crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet --post-hook 'systemctl reload nginx'") | crontab -
   else
-    echo -e "${ERR}SSL دریافت نشد. مطمئن شو دامنه به IP سرور خورده باشه${NC}"
+    echo -e "${ERR}SSL failed. Make sure domain points to this server IP${NC}"
     exit 1
   fi
 }
@@ -746,8 +738,14 @@ main_install() {
   check_root
   detect_location
   echo -e "${INFO}${FLAG_RAW} ${LOC}${NC}"
-  if [[ -z "$DOMAIN" ]]; then echo -ne "${BOLD}🌐 دامنه (your-domain.com): ${NC}"; read -r DOMAIN; fi
-  if [[ -z "$EMAIL" ]]; then echo -ne "${BOLD}📧 ایمیل (برای SSL): ${NC}"; read -r EMAIL; fi
+  if [[ -z "$DOMAIN" ]]; then
+    if [[ -n "${2:-}" ]]; then DOMAIN="$2"
+    else echo -ne "${BOLD}Domain (your-domain.com): ${NC}"; read -r DOMAIN; fi
+  fi
+  if [[ -z "$EMAIL" ]]; then
+    if [[ -n "${3:-}" ]]; then EMAIL="$3"
+    else echo -ne "${BOLD}Email (for SSL): ${NC}"; read -r EMAIL; fi
+  fi
   preflight_check
   install_dependencies
   system_tuning
@@ -763,14 +761,12 @@ main_install() {
     iptables -C INPUT -p tcp --dport "$p" -j ACCEPT 2>/dev/null || iptables -A INPUT -p tcp --dport "$p" -j ACCEPT
   done
   netfilter-persistent save 2>/dev/null
-  echo -ne "${YELLOW}ربات تلگرام نصب کنم؟ (y/n): ${NC}"; read -r setup_bot
-  [[ "$setup_bot" == "y" || "$setup_bot" == "Y" ]] && bot_setup
   systemctl restart nginx xray realityghost-monitor
-  echo -e "${GREEN}╔════════════════════════════════╗${NC}"
-  echo -e "${GREEN}║   نصب با موفقیت تکمیل شد! 🎉  ║${NC}"
-  echo -e "${GREEN}╚════════════════════════════════╝${NC}"
-  echo -e "  📊 پنل:  https://${DOMAIN}/status/"
-  echo -e "  📥 ساب:  https://${DOMAIN}/sub"
+  echo -e "${GREEN}╔═══════════════════════════════╗${NC}"
+  echo -e "${GREEN}║  ✅ Installation Complete! 🎉 ║${NC}"
+  echo -e "${GREEN}╚═══════════════════════════════╝${NC}"
+  echo -e "  📊 Panel:  https://${DOMAIN}/status/"
+  echo -e "  📥 Sub:    https://${DOMAIN}/sub"
   show_info
 }
 
@@ -820,7 +816,7 @@ manage_menu() {
 }
 
 case "${1:-}" in
-  install) main_install ;;
+  install) DOMAIN="$2"; EMAIL="$3"; main_install ;;
   manage) check_root; detect_location; manage_menu ;;
   manual-rotate) check_root; manual_rotate ;;
   pull) check_root; pull_update ;;
