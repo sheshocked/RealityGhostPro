@@ -730,12 +730,16 @@ uninstall() {
 
 main_install() {
   echo ""
-  echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
-  echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
-  echo -e "${PURPLE}  ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
-  echo -e "${PURPLE}  ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
-  echo -e "${PURPLE}  ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
-  echo -e "${PURPLE}   ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
+  if command -v figlet &>/dev/null; then
+    figlet -f slant "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
+  else
+    echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
+    echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
+    echo -e "${PURPLE}  ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
+    echo -e "${PURPLE}  ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
+    echo -e "${PURPLE}  ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
+    echo -e "${PURPLE}   ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
+  fi
   echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
   echo -e "${PURPLE}  Xray VLESS+Reality Installer & Manager${NC}"
   echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
@@ -773,12 +777,16 @@ main_install() {
 manage_menu() {
   while true; do
     clear
-    echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
-    echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
-    echo -e "${PURPLE}  ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
-    echo -e "${PURPLE}  ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
-    echo -e "${PURPLE}  ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
-    echo -e "${PURPLE}   ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
+    if command -v figlet &>/dev/null; then
+      figlet -f slant "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
+    else
+      echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
+      echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
+      echo -e "${PURPLE}  ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
+      echo -e "${PURPLE}  ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
+      echo -e "${PURPLE}  ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
+      echo -e "${PURPLE}   ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
+    fi
     echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
     echo -e "${PURPLE}  ${FLAG_RAW} ${LOC} • ${DOMAIN}${NC}"
     echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
@@ -819,12 +827,16 @@ case "${1:-}" in
   uninstall) check_root; uninstall ;;
   *)
     echo ""
-    echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
-    echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
-    echo -e "${PURPLE}  ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
-    echo -e "${PURPLE}  ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
-    echo -e "${PURPLE}  ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
-    echo -e "${PURPLE}   ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
+    if command -v figlet &>/dev/null; then
+      figlet -f slant "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
+    else
+      echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
+      echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
+      echo -e "${PURPLE}  ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
+      echo -e "${PURPLE}  ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
+      echo -e "${PURPLE}  ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
+      echo -e "${PURPLE}   ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
+    fi
     echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
     echo -e "${PURPLE}  Xray VLESS+Reality Installer & Manager${NC}"
     echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
