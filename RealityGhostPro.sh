@@ -319,7 +319,7 @@ build_subscription() {
   [[ -z "$uuid" || -z "$pbk" ]] && { echo -e "${ERR}خطا در خوندن کانفیگ${NC}"; return 1; }
   local pubkey=""
   local keys=$(/usr/local/bin/xray x25519 -i "$pbk" 2>/dev/null)
-  pubkey=$(echo "$keys" | grep "Public" | awk '{print $3}')
+  pubkey=$(echo "$keys" | grep -oP '(?<=Password: )\S+')
   [[ -z "$pubkey" ]] && pubkey=$(jq -r '.inbounds[0].streamSettings.realitySettings.shortIds[0] // ""' "$CONFIG_DIR/config.json")
   mkdir -p "$SUB_DIR"
   local lines=()
@@ -338,8 +338,8 @@ build_subscription() {
 
 build_panel() {
   local uuid=$(jq -r '.inbounds[0].settings.clients[0].id' "$CONFIG_DIR/config.json" 2>/dev/null)
-  local pbk=$(jq -r '.inbounds[0].streamSettings.realitySettings.shortIds[0] // ""' "$CONFIG_DIR/config.json" 2>/dev/null)
-  local pubkey_line=$(/usr/local/bin/xray x25519 -i "$pbk" 2>/dev/null | grep "Public" | awk '{print $3}')
+  local pbk=$(jq -r '.inbounds[0].streamSettings.realitySettings.privateKey' "$CONFIG_DIR/config.json" 2>/dev/null)
+  local pubkey_line=$(/usr/local/bin/xray x25519 -i "$pbk" 2>/dev/null | grep -oP '(?<=Password: )\S+')
   [[ -z "$pubkey_line" ]] && pubkey_line="$pbk"
   local configs_js=""; local idx=0; local emojis=("🟢" "🟣" "🟠" "🔴" "🟤" "🔵")
   for entry in "${SNI_LIST[@]}"; do
