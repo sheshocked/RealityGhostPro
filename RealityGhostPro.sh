@@ -60,37 +60,37 @@ check_root() {
 }
 
 preflight_check() {
-  echo -e "${INFO}چک کردن سیستم..."
-  grep -q "Ubuntu\|Debian" /etc/os-release 2>/dev/null || echo -e "${WARN}فقط اوبونتو/دبیان تست شده"
+  echo -e "${INFO}Checking system..."
+  grep -q "Ubuntu\|Debian" /etc/os-release 2>/dev/null || echo -e "${WARN}Only Ubuntu/Debian tested"
   local ports=("443" "${XRAY_TCP_PORT}" "${SUB_PORT}")
   for p in "${ports[@]}"; do
     if ss -tlnp | grep -q ":${p} "; then
       local proc=$(ss -tlnp | grep ":${p} " | awk '{print $7}' | tr -d '"')
-      echo -e "${WARN}پورت ${p} رو ${proc:-?} گرفته — خودکار آزادش میکنم"
+      echo -e "${WARN}Port ${p} in use by ${proc:-?} — auto-releasing"
       local pid=$(ss -tlnp | grep ":${p} " | grep -oP 'pid=\K[0-9]+')
-      [[ -n "$pid" ]] && kill -9 "$pid" 2>/dev/null && echo -e "${OK}پورت ${p} آزاد شد"
+      [[ -n "$pid" ]] && kill -9 "$pid" 2>/dev/null && echo -e "${OK}Port ${p} freed"
     fi
   done
   nslookup google.com >/dev/null 2>&1 || dig google.com >/dev/null 2>&1 || {
-    echo -e "${WARN}DNS کار نمیکنه — میندازم رو 8.8.8.8"
+    echo -e "${WARN}DNS not working — setting 8.8.8.8"
     echo "nameserver 8.8.8.8" > /etc/resolv.conf 2>/dev/null
     sleep 2
   }
-  ping -4 -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || echo -e "${WARN}نت‌گردش اوکی نیست (نادیده میگیرم)"
-  echo -e "${OK}سیستم آمادست"
+  ping -4 -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || echo -e "${WARN}Network check failed (ignoring)"
+  echo -e "${OK}System ready"
 }
 
 install_dependencies() {
-  echo -e "${INFO}نصب پیش‌نیازها..."
+  echo -e "${INFO}Installing dependencies..."
   apt-get update -y 2>/dev/null | tail -1
   apt-get install -y wget curl unzip uuid-runtime jq qrencode certbot \
     nginx-extras logrotate bc netcat-openbsd dnsutils python3 python3-pip sqlite3 figlet 2>/dev/null | tail -1
   pip3 install python-telegram-bot requests --break-system-packages -q 2>/dev/null || true
-  echo -e "${OK}پیش‌نیازها نصب شدن"
+  echo -e "${OK}Dependencies installed"
 }
 
 system_tuning() {
-  echo -e "${INFO}بهینه‌سازی سیستم..."
+  echo -e "${INFO}System tuning..."
   if [[ "$(sysctl net.ipv4.tcp_congestion_control 2>/dev/null | awk '{print $3}')" != "bbr" ]]; then
     modprobe tcp_bbr 2>/dev/null
     echo "net.core.default_qdisc=fq" >> /etc/sysctl.d/99-realityghost.conf
@@ -150,14 +150,14 @@ generate_reality_keys() {
 }
 
 install_xray() {
-  echo -e "${INFO}نصب Xray..."
+  echo -e "${INFO}Installing Xray..."
   mkdir -p "$INSTALL_DIR" "$CONFIG_DIR"
   if command -v /usr/local/bin/xray &>/dev/null; then
-    echo -e "${OK}Xray از قبل هست"
+    echo -e "${OK}Xray already installed"
     return 0
   fi
   local url=$(curl -sL https://api.github.com/repos/XTLS/Xray-core/releases/latest 2>/dev/null | jq -r '.assets[] | select(.name | test("linux-64")) | .browser_download_url' 2>/dev/null | head -1)
-  [[ -z "$url" ]] && { echo -e "${ERR}نتونستم Xray رو دانلود کنم${NC}"; exit 1; }
+  [[ -z "$url" ]] && { echo -e "${ERR}Failed to download Xray${NC}"; exit 1; }
   curl -sL "$url" -o /tmp/xray.zip
   unzip -qo /tmp/xray.zip -d /tmp/xray-core 2>/dev/null
   cp /tmp/xray-core/xray "$INSTALL_DIR/xray"
@@ -178,35 +178,35 @@ User=root
 WantedBy=multi-user.target
 SERVEOF
   systemctl daemon-reload
-  echo -e "${OK}Xray نسخه $(/usr/local/bin/xray version 2>/dev/null | head -1) نصب شد"
+  echo -e "${OK}Xray $(/usr/local/bin/xray version 2>/dev/null | head -1) installed"
 }
 
 install_certbot() {
   if [[ -z "$DOMAIN" ]]; then
-    echo -ne "${BOLD}دامنه (your-domain.com): ${NC}"; read -r DOMAIN
+    echo -ne "${BOLD}Domain (your-domain.com): ${NC}"; read -r DOMAIN
   fi
   if [[ -z "$EMAIL" ]]; then
-    echo -ne "${BOLD}ایمیل (برای Let's Encrypt): ${NC}"; read -r EMAIL
+    echo -ne "${BOLD}Email (for Let's Encrypt): ${NC}"; read -r EMAIL
   fi
   if [[ -d "/etc/letsencrypt/live/${DOMAIN}" ]]; then
-    echo -e "${OK}SSL از قبل هست"
+    echo -e "${OK}SSL already exists"
     return 0
   fi
-  echo -e "${INFO}میگیرم SSL رو از Let's Encrypt..."
+  echo -e "${INFO}Getting SSL from Let's Encrypt..."
   systemctl stop nginx 2>/dev/null
   certbot certonly --standalone --non-interactive --agree-tos -d "${DOMAIN}" -m "${EMAIL}" 2>/dev/null
   systemctl start nginx 2>/dev/null
   if [[ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]]; then
-    echo -e "${OK}SSL گرفته شد"
+    echo -e "${OK}SSL obtained"
     (crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet --post-hook 'systemctl reload nginx'") | crontab -
   else
-    echo -e "${ERR}SSL گرفته نشد. مطمئن شو دامنه به IP سرور خورده${NC}"
+    echo -e "${ERR}SSL failed. Make sure domain points to this server IP${NC}"
     exit 1
   fi
 }
 
 configure_nginx() {
-  echo -e "${INFO}تنظیم NGINX..."
+  echo -e "${INFO}Configuring NGINX..."
   cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup 2>/dev/null
   cat > /etc/nginx/nginx.conf <<NGINXEOF
 user www-data;
@@ -248,11 +248,11 @@ http {
 }
 NGINXEOF
   nginx -t 2>/dev/null && systemctl reload nginx
-  echo -e "${OK}NGINX تنظیم شد"
+  echo -e "${OK}NGINX configured"
 }
 
 configure_xray() {
-  echo -e "${INFO}تنظیم Xray..."
+  echo -e "${INFO}Configuring Xray..."
   local uuid=$(generate_uuid)
   local keys=$(generate_reality_keys)
   local private_key=$(echo "$keys" | cut -d':' -f1)
@@ -314,7 +314,7 @@ INFOEOF
     echo "$link" >> "$CONFIG_DIR/client_info.txt"
     idx=$((idx+1))
   done
-  echo -e "${OK}Xray پیکربندی شد"
+  echo -e "${OK}Xray configured"
 }
 
 build_subscription() {
@@ -337,7 +337,7 @@ build_subscription() {
   done
   printf '%s\n' "${lines[@]}" | base64 -w 0 > "$SUB_DIR/sub.txt"
   chown www-data:www-data "$SUB_DIR/sub.txt" 2>/dev/null
-  echo -e "${OK}ساب ساخته شد (۶ کانفیگ)"
+  echo -e "${OK}Subscription built (6 configs)"
 }
 
 build_panel() {
@@ -446,11 +446,11 @@ buildLinks();fetchData();setInterval(fetchData,3000);
 </script></body></html>
 HTMLEOF
   chown -R www-data:www-data "$STATUS_DIR" 2>/dev/null
-  echo -e "${OK}پنل ساخته شد"
+  echo -e "${OK}Panel built"
 }
 
 install_monitor() {
-  echo -e "${INFO}نصب مانیتور..."
+  echo -e "${INFO}Installing monitor..."
   cat > "$MONITOR_SCRIPT" <<'MONEOF'
 #!/bin/bash
 S="/var/www/html/status/stats.json"; D="/usr/local/etc/xray"; X="/usr/local/bin/xray"; L="/var/log/xray"
@@ -492,7 +492,7 @@ SERVEOF
   systemctl daemon-reload
   systemctl enable realityghost-monitor 2>/dev/null
   systemctl restart realityghost-monitor 2>/dev/null
-  echo -e "${OK}مانیتور نصب شد"
+  echo -e "${OK}Monitor installed"
 }
 
 show_info() {
@@ -579,7 +579,7 @@ config_manager() {
          done
          systemctl restart xray
          build_subscription; build_panel
-         echo -e "${OK}Short IDs چرخیدن${NC}"
+         echo -e "${OK}Short IDs rotated${NC}"
          echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       4) echo -e "UUID: $(jq -r '.inbounds[0].settings.clients[0].id' "$CONFIG_DIR/config.json")"
          echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
@@ -609,45 +609,45 @@ manual_rotate() {
   systemctl restart xray
   build_subscription
   build_panel
-  echo -e "${OK}Short Ids چرخیدن"
+  echo -e "${OK}Short Ids rotated"
 }
 
 pull_update() {
-  echo -e "${INFO}چک کردن آپدیت..."
+  echo -e "${INFO}Checking for updates..."
   local repo_url="https://github.com/sheshocked/RealityGhostPro.git"
   local script_dir="$(cd "$(dirname "$0")" && pwd)"
   local backup_dir="/tmp/realityghost-backup-$(date +%s)"
   if ! command -v git &>/dev/null; then apt-get install -y git 2>/dev/null || {
-    echo -e "${ERR}git نصب نشد${NC}"; return 1; }; fi
+    echo -e "${ERR}git not installed${NC}"; return 1; }; fi
   cd "$script_dir" || return 1
   if [[ ! -d .git ]]; then
-    echo -e "${WARN}پوشه .git پیدا نشد. کلون میکنم..."
+    echo -e "${WARN}.git folder not found. Cloning..."
     cd /tmp || return 1; rm -rf RealityGhostPro-tmp
-    git clone "$repo_url" RealityGhostPro-tmp 2>&1 || { echo -e "${ERR}کلون ناموفق${NC}"; return 1; }
+    git clone "$repo_url" RealityGhostPro-tmp 2>&1 || { echo -e "${ERR}Clone failed${NC}"; return 1; }
     cp -r "$script_dir" "$backup_dir" 2>/dev/null
     cp -rf /tmp/RealityGhostPro-tmp/* "$script_dir/"; rm -rf /tmp/RealityGhostPro-tmp
     chmod +x "$script_dir/RealityGhostPro.sh"
-    echo -e "${OK}آپدیت شد! بکاپ: ${backup_dir}${NC}"
+    echo -e "${OK}Updated! Backup: ${backup_dir}${NC}"
     return 0
   fi
   cp -r "$script_dir" "$backup_dir" 2>/dev/null
   git stash 2>/dev/null
   local old_hash=$(git rev-parse HEAD)
-  git pull origin main 2>&1 || { echo -e "${ERR}pull ناموفق${NC}"; return 1; }
+  git pull origin main 2>&1 || { echo -e "${ERR}Pull failed${NC}"; return 1; }
   local new_hash=$(git rev-parse HEAD)
   local changes=$(git rev-list --count "$old_hash..$new_hash" 2>/dev/null)
-  echo -e "${OK}آپدیت شد (${changes:-?} تا تغییر)"
+  echo -e "${OK}Updated (${changes:-?} changes)"
   echo -e "${INFO}${old_hash:0:8} → ${new_hash:0:8}${NC}"
   chmod +x "$script_dir/RealityGhostPro.sh"
 }
 
 bot_setup() {
-  echo -e "${INFO}نصب ربات تلگرام..."
+  echo -e "${INFO}Installing Telegram bot..."
   chmod +x /usr/local/bin/rg-bot.py
   /usr/local/bin/rg-bot.py init
-  echo -ne "${BOLD}توکن ربات (از BotFather): ${NC}"
+  echo -ne "${BOLD}Bot token (from BotFather): ${NC}"
   read -r bot_token
-  [[ -z "$bot_token" ]] && { echo -e "${WARN}بدون توکن، ربات فعال نمیشه${NC}"; return; }
+  [[ -z "$bot_token" ]] && { echo -e "${WARN}No token, bot disabled${NC}"; return; }
   mkdir -p /etc/realityghost
   echo "{\"enabled\":true,\"token\":\"$bot_token\",\"domain\":\"$DOMAIN\",\"admin_ids\":[]}" > /etc/realityghost/bot_config.json
   cat > /etc/systemd/system/realityghost-bot.service <<BOTEOF
@@ -732,18 +732,18 @@ main_install() {
     echo -e "${PURPLE}   ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
   fi
   echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
-  echo -e "${PURPLE}  Xray VLESS+Reality — نصب و مدیریت${NC}"
+  echo -e "${PURPLE}  Xray VLESS+Reality — Install & Manage${NC}"
   echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
   check_root
   detect_location
   echo -e "${INFO}${FLAG_RAW} ${LOC}${NC}"
   if [[ -z "$DOMAIN" ]]; then
     if [[ -n "${2:-}" ]]; then DOMAIN="$2"
-    else echo -ne "${BOLD}دامنه (your-domain.com): ${NC}"; read -r DOMAIN; fi
+    else echo -ne "${BOLD}Domain (your-domain.com): ${NC}"; read -r DOMAIN; fi
   fi
   if [[ -z "$EMAIL" ]]; then
     if [[ -n "${3:-}" ]]; then EMAIL="$3"
-    else echo -ne "${BOLD}ایمیل (برای SSL): ${NC}"; read -r EMAIL; fi
+    else echo -ne "${BOLD}Email (for SSL): ${NC}"; read -r EMAIL; fi
   fi
   preflight_check
   install_dependencies
@@ -787,17 +787,17 @@ manage_menu() {
     echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
     [[ -f "$CONFIG_DIR/config.json" ]] && DOMAIN=$(jq -r '.inbounds[0].settings.clients[0].email' "$CONFIG_DIR/config.json" 2>/dev/null | sed 's/user@//')
     [[ -z "$DOMAIN" || "$DOMAIN" == "null" ]] && DOMAIN="your-domain.com"
-    echo "1. 📋 اطلاعات اتصال"
-    echo "2. ⚙️ مدیریت کانفیگ"
-    echo "3. 🔌 مدیریت پورت"
-    echo "4. 🔄 چرخش Short IDs"
-    echo "5. 🏗️ بازسازی ساب و پنل"
-    echo "6. 🔄 ری‌استارت سرویس‌ها"
-    echo "7. 🤖 ربات"
-    echo "8. 🔄 آپدیت"
-    echo "9. 🗑️ حذف کامل"
-    echo "0. ❌ خروج"
-    echo -ne "${BOLD}انتخاب: ${NC}"; read -r opt
+    echo "1. 📋 Connection Info"
+    echo "2. ⚙️ Config Manager"
+    echo "3. 🔌 Port Manager"
+    echo "4. 🔄 Rotate Short IDs"
+    echo "5. 🏗️ Rebuild Sub & Panel"
+    echo "6. 🔄 Restart Services"
+    echo "7. 🤖 Bot"
+    echo "8. 🔄 Update"
+    echo "9. 🗑️ Uninstall"
+    echo "0. Exit"
+    echo -ne "${BOLD}Choice: ${NC}"; read -r opt
     case $opt in
       1) show_info; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       2) config_manager ;;
@@ -833,14 +833,14 @@ case "${1:-}" in
       echo -e "${PURPLE}   ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
     fi
     echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
-    echo -e "${PURPLE}  Xray VLESS+Reality — نصب و مدیریت${NC}"
+    echo -e "${PURPLE}  Xray VLESS+Reality — Install & Manage${NC}"
     echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
     echo ""
-    echo -e "  ${GREEN}install${NC}     — نصب Xray Reality روی سرور"
-    echo -e "  ${GREEN}manage${NC}      — منوی مدیریت"
-    echo -e "  ${GREEN}manual-rotate${NC}— چرخش دستی Short IDs"
-    echo -e "  ${GREEN}pull${NC}         — آپدیت از گیتهاب"
-    echo -e "  ${GREEN}uninstall${NC}   — حذف کامل"
+    echo -e "  ${GREEN}install${NC}     — Install Xray Reality on your server"
+    echo -e "  ${GREEN}manage${NC}      — Management menu"
+    echo -e "  ${GREEN}manual-rotate${NC}— Rotate Short IDs manually"
+    echo -e "  ${GREEN}pull${NC}         — Update from GitHub"
+    echo -e "  ${GREEN}uninstall${NC}   — Remove everything"
     echo ""
     ;;
 esac
