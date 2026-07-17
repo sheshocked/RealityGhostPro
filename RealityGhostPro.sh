@@ -66,7 +66,7 @@ detect_location() {
 
 check_root() {
   if [[ $EUID -ne 0 ]]; then
-    echo -e "${ERR}این اسکریپت باید با دسترسی روت اجرا بشه${NC}"
+    echo -e "${ERR}This script must be run as root${NC}"
     exit 1
   fi
 }
@@ -233,11 +233,15 @@ install_certbot() {
 }
 
 configure_nginx() {
-  echo -e "${INFO}Configuring NGINX..."
+  echo -e "${INFO}Configuring NGINX (SNI routing: 443 → panel/xray)..."
   cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup 2>/dev/null
   [[ -z "$SSL_CERT" ]] && SSL_CERT="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
   [[ -z "$SSL_KEY" ]] && SSL_KEY="/etc/letsencrypt/live/${DOMAIN}/privkey.pem"
+  # Install stream module if missing
+  apt-get install -y libnginx-mod-stream >/dev/null 2>&1
+  ln -sf /usr/share/nginx/modules-available/mod-stream.conf /etc/nginx/modules-enabled/50-mod-stream.conf 2>/dev/null
   cat > /etc/nginx/nginx.conf <<NGINXEOF
+load_module modules/ngx_stream_module.so;
 user www-data;
 worker_processes auto;
 pid /run/nginx.pid;
@@ -250,32 +254,43 @@ events {
 }
 
 http {
-    limit_conn_zone \$binary_remote_addr zone=addr:10m;
-    limit_req_zone \$binary_remote_addr zone=one:10m rate=30r/s;
     include /etc/nginx/mime.types;
     default_type application/octet-stream;
+    sendfile on;
+    keepalive_timeout 65;
 
     server {
-        listen 0.0.0.0:${SUB_PORT} ssl;
+        listen 127.0.0.1:8444 ssl;
         server_name ${DOMAIN};
         ssl_certificate ${SSL_CERT};
         ssl_certificate_key ${SSL_KEY};
         ssl_protocols TLSv1.2 TLSv1.3;
-        location = /sub {
-            default_type text/plain;
-            add_header Content-Disposition 'attachment; filename="sub.txt"';
-            alias ${SUB_DIR}/sub.txt;
-        }
         location /status/ {
             alias ${STATUS_DIR}/;
             index index.html;
             try_files \$uri \$uri/ /status/index.html;
         }
+        location /sub {
+            alias ${SUB_DIR}/sub.txt;
+            default_type text/plain;
+        }
+    }
+}
+
+stream {
+    map \$ssl_preread_server_name \$backend {
+        ${DOMAIN}    127.0.0.1:8444;
+        default      127.0.0.1:${XRAY_TCP_PORT};
+    }
+    server {
+        listen 0.0.0.0:443;
+        ssl_preread on;
+        proxy_pass \$backend;
     }
 }
 NGINXEOF
-  nginx -t 2>/dev/null && systemctl reload nginx
-  echo -e "${OK}NGINX configured"
+  nginx -t 2>/dev/null && systemctl restart nginx
+  echo -e "${OK}NGINX configured (port 443 shared by panel + Xray via SNI)"
 }
 
 configure_xray() {
@@ -327,11 +342,11 @@ XRAYEOF
   chmod 600 "$CONFIG_DIR/config.json"
   mkdir -p "$LOG_DIR"; chown -R nobody:nogroup "$LOG_DIR" 2>/dev/null
   cat <<INFOEOF | tee "$CONFIG_DIR/client_info.txt" > /dev/null
-══════════ RealityGhost PRO ══════════
-دامنه: ${DOMAIN}
+═══════════ RealityGhost PRO ═══════════
+Domain: ${DOMAIN}
 UUID: ${uuid}
 Public Key: ${public_key}
-پورت: 443 (SNI Passthrough)
+Port: 443 (SNI Passthrough)
 INFOEOF
   local idx=0
   for entry in "${SNI_LIST[@]}"; do
@@ -348,7 +363,7 @@ INFOEOF
 build_subscription() {
   local uuid=$(jq -r '.inbounds[0].settings.clients[0].id' "$CONFIG_DIR/config.json" 2>/dev/null)
   local pbk=$(jq -r '.inbounds[0].streamSettings.realitySettings.privateKey' "$CONFIG_DIR/config.json" 2>/dev/null)
-  [[ -z "$uuid" || -z "$pbk" ]] && { echo -e "${ERR}خطا در خوندن کانفیگ${NC}"; return 1; }
+  [[ -z "$uuid" || -z "$pbk" ]] && { echo -e "${ERR}Error reading config${NC}"; return 1; }
   local pubkey=""
   local keys=$(/usr/local/bin/xray x25519 -i "$pbk" 2>/dev/null)
   pubkey=$(echo "$keys" | grep -oE "(PublicKey|Password \(PublicKey\)): ?\S+" | head -1 | grep -oE "\S+$")
@@ -599,8 +614,8 @@ show_info() {
     idx=$((idx+1))
   done
   echo ""
-  echo -e "${CYAN}📊 پنل:${NC} https://${DOMAIN}:${SUB_PORT}/status/"
-  echo -e "${CYAN}📥 ساب:${NC} https://${DOMAIN}/sub"
+  echo -e "${CYAN}📊 Panel:${NC} https://${DOMAIN}/status/"
+  echo -e "${CYAN}📥 Subscription:${NC} https://${DOMAIN}/sub"
   echo ""
 }
 
@@ -682,7 +697,7 @@ setup_rotation() {
 0 5 */3 * * root bash ${CONFIG_DIR}/RealityGhostPro.sh manual-rotate
 CRONEOF
   chmod +x /etc/cron.d/realityghost-rotate
-  echo -e "${OK}چرخش هر ۳ روز تنظیم شد"
+  echo -e "${OK}Rotation set for every 3 days"
 }
 
 manual_rotate() {
@@ -747,7 +762,7 @@ BOTEOF
   systemctl enable realityghost-bot 2>/dev/null
   systemctl restart realityghost-bot 2>/dev/null
   sleep 2
-  systemctl is-active realityghost-bot &>/dev/null && echo -e "${OK}🤖 ربات فعال شد!" || echo -e "${WARN}ربات استارت نشد. journalctl -u realityghost-bot${NC}"
+  systemctl is-active realityghost-bot &>/dev/null && echo -e "${OK}🤖 Bot activated!" || echo -e "${WARN}Bot failed to start. journalctl -u realityghost-bot${NC}"
 }
 
 bot_menu() {
@@ -776,9 +791,9 @@ bot_menu() {
       3) /usr/local/bin/rg-bot.py list 2>&1; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       4) echo -ne "Name: "; read -r n; echo -ne "Traffic MB (0=∞): "; read -r l; echo -ne "Days (0=∞): "; read -r d
          /usr/local/bin/rg-bot.py adduser "$n" "${l:-0}" "${d:-0}"; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
-      5) echo -ne "آیدی: "; read -r id
-         /usr/local/bin/rg-bot.py deluser "$id" 2>&1 || echo "❌"
-         echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
+      5) echo -ne "User ID: "; read -r id
+        /usr/local/bin/rg-bot.py deluser "$id" 2>&1 || echo "❌"
+        echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       6) /usr/local/bin/rg-bot.py stats 2>&1; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       0) return ;;
     esac
@@ -786,10 +801,10 @@ bot_menu() {
 }
 
 uninstall() {
-  echo -e "${WARN}⚠ حذف کامل RealityGhost PRO${NC}"
-  echo -ne "آیا مطمئنی؟ تایپ کن 'yes': "
+  echo -e "${WARN}⚠ Full uninstall of RealityGhost PRO${NC}"
+  echo -ne "Are you sure? Type 'yes': "
   read -r ans
-  [[ "$ans" != "yes" ]] && { echo -e "${INFO}لغو شد${NC}"; return; }
+  [[ "$ans" != "yes" ]] && { echo -e "${INFO}Cancelled${NC}"; return; }
   systemctl stop xray nginx realityghost-monitor realityghost-bot 2>/dev/null
   systemctl disable xray realityghost-monitor realityghost-bot 2>/dev/null
   rm -rf "$INSTALL_DIR" "$CONFIG_DIR" "$STATUS_DIR" "$STATE_DIR" "$SUB_DIR"
@@ -799,7 +814,7 @@ uninstall() {
   rm -f /etc/sysctl.d/99-realityghost.conf /etc/realityghost/bot_config.json /etc/realityghost/users.db
   systemctl daemon-reload
   systemctl restart nginx 2>/dev/null
-  echo -e "${OK}حذف کامل شد"
+  echo -e "${OK}Uninstall complete"
 }
 
 # ─── Main ────────────────────────────────────────────────────────────
@@ -854,10 +869,10 @@ main_install() {
   # Restart
   systemctl restart nginx xray realityghost-monitor
   echo -e "${GREEN}╔═══════════════════════════════╗${NC}"
-  echo -e "${GREEN}║  نصب با موفقیت تموم شد! 🎉   ║${NC}"
+  echo -e "${GREEN}║   Installation Complete! 🎉    ║${NC}"
   echo -e "${GREEN}╚═══════════════════════════════╝${NC}"
-  echo -e "  📊 پنل:  https://${DOMAIN}:${SUB_PORT}/status/"
-  echo -e "  📥 ساب:  https://${DOMAIN}/sub"
+  echo -e "  📊 Panel:  https://${DOMAIN}/status/"
+  echo -e "  📥 Sub:    https://${DOMAIN}/sub"
   show_info
 }
 
