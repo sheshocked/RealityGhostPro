@@ -731,7 +731,7 @@ uninstall() {
 main_install() {
   echo ""
   if command -v figlet &>/dev/null; then
-    figlet -f slant "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
+    while IFS= read -r line; do printf "${PURPLE}%s${NC}\n" "$line"; done < <(figlet -f slant "RG PRO" 2>/dev/null)
   else
     echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
     echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
@@ -778,7 +778,7 @@ manage_menu() {
   while true; do
     clear
     if command -v figlet &>/dev/null; then
-      figlet -f slant "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
+      while IFS= read -r line; do printf "${PURPLE}%s${NC}\n" "$line"; done < <(figlet -f slant "RG PRO" 2>/dev/null)
     else
       echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
       echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
@@ -828,7 +828,7 @@ case "${1:-}" in
   *)
     echo ""
     if command -v figlet &>/dev/null; then
-      figlet -f slant "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
+      while IFS= read -r line; do printf "${PURPLE}%s${NC}\n" "$line"; done < <(figlet -f slant "RG PRO" 2>/dev/null)
     else
       echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
       echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
