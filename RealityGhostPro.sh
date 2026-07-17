@@ -7,7 +7,7 @@ BOLD='\033[1m'; NC='\033[0m'
 INFO="${CYAN}[ℹ]${NC}"; OK="${GREEN}[✓]${NC}"; ERR="${RED}[✗]${NC}"; WARN="${YELLOW}[⚠]${NC}"
 
 DOMAIN="${DOMAIN:-}"; EMAIL="${EMAIL:-}"
-SUB_PORT="8443"; XRAY_TCP_PORT="8444"
+SUB_PORT="8443"; XRAY_TCP_PORT="443"
 INSTALL_DIR="/usr/local/share/xray"
 CONFIG_DIR="/usr/local/etc/xray"
 NGINX_CONF_DIR="/etc/nginx"
@@ -212,23 +212,18 @@ configure_nginx() {
 user www-data;
 worker_processes auto;
 pid /run/nginx.pid;
-include /etc/nginx/modules-enabled/*.conf;
-events { worker_connections 768; }
-stream {
-    map \$ssl_preread_server_name \$backend {
-        ${DOMAIN} nginx_https;
-        sub.${DOMAIN} nginx_https;
-        default xray_tcp;
-    }
-    upstream xray_tcp { server 127.0.0.1:${XRAY_TCP_PORT}; }
-    upstream nginx_https { server 127.0.0.1:${SUB_PORT}; }
-    server {
-        listen 443;
-        proxy_pass \$backend;
-        ssl_preread on;
-    }
+include /etc/modules-enabled/*.conf;
+
+events {
+    worker_connections 16384;
+    multi_accept on;
+    use epoll;
 }
+
 http {
+    limit_conn_zone \$binary_remote_addr zone=addr:10m;
+    limit_req_zone \$binary_remote_addr zone=one:10m rate=30r/s;
+
     server {
         listen 127.0.0.1:${SUB_PORT} ssl;
         server_name ${DOMAIN};
@@ -277,7 +272,7 @@ configure_xray() {
 {
   "log": { "loglevel": "info", "access": "${LOG_DIR}/access.log", "error": "${LOG_DIR}/error.log" },
   "inbounds": [{
-    "port": ${XRAY_TCP_PORT}, "listen": "127.0.0.1", "protocol": "vless",
+    "port": ${XRAY_TCP_PORT}, "listen": "0.0.0.0", "protocol": "vless",
     "settings": {
       "clients": [{ "id": "${uuid}", "flow": "xtls-rprx-vision", "level": 0, "email": "user@${DOMAIN}" }],
       "decryption": "none"
@@ -836,7 +831,7 @@ case "${1:-}" in
     echo -e "${PURPLE}  Xray VLESS+Reality — Install & Manage${NC}"
     echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
     echo ""
-    echo -e "  ${GREEN}install${NC}     — Install Xray Reality on your server"
+    echo -e "  ${GREEN}install${NC}     — Install Xray Reality (auto setup)"
     echo -e "  ${GREEN}manage${NC}      — Management menu"
     echo -e "  ${GREEN}manual-rotate${NC}— Rotate Short IDs manually"
     echo -e "  ${GREEN}pull${NC}         — Update from GitHub"
