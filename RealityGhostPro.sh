@@ -262,8 +262,8 @@ configure_xray() {
   echo -e "${INFO}Configuring Xray..."
   local uuid=$(generate_uuid)
   local keys=$(generate_reality_keys)
-  local private_key=$(echo "$keys" | cut -d':' -f1)
-  local public_key=$(echo "$keys" | cut -d':' -f2)
+  local private_key=$(echo "$keys" | grep -oE "Private(Key)?: ?\S+" | head -1 | grep -oE "\S+$")
+  local public_key=$(echo "$keys" | grep -oE "(PublicKey|Password \(PublicKey\)): ?\S+" | head -1 | grep -oE "\S+$")
   local sids=(); local snis_json=""; local sids_json=""; local i=0
   for entry in "${SNI_LIST[@]}"; do
     IFS=':' read -r sni label label_url <<< "$entry"
@@ -293,7 +293,7 @@ configure_xray() {
       "network": "tcp", "security": "reality",
       "realitySettings": {
         "show": false, "dest": "www.gstatic.com:443", "xver": 0,
-        "serverNames": [${snis_json},${extra_snis}],
+        "serverNames": [${snis_json},"googleadservices.com","google-analytics.com","googletagmanager.com","googleapis.com"],
         "privateKey": "${private_key}",
         "shortIds": [${sids_json}]
       }
@@ -331,7 +331,7 @@ build_subscription() {
   [[ -z "$uuid" || -z "$pbk" ]] && { echo -e "${ERR}خطا در خوندن کانفیگ${NC}"; return 1; }
   local pubkey=""
   local keys=$(/usr/local/bin/xray x25519 -i "$pbk" 2>/dev/null)
-  pubkey=$(echo "$keys" | grep -oP '(?<=Password: )\S+')
+  pubkey=$(echo "$keys" | grep -oE "(PublicKey|Password \(PublicKey\)): ?\S+" | head -1 | grep -oE "\S+$")
   [[ -z "$pubkey" ]] && pubkey=$(jq -r '.inbounds[0].streamSettings.realitySettings.shortIds[0] // ""' "$CONFIG_DIR/config.json")
   mkdir -p "$SUB_DIR"
   local lines=()
@@ -351,7 +351,7 @@ build_subscription() {
 build_panel() {
   local uuid=$(jq -r '.inbounds[0].settings.clients[0].id' "$CONFIG_DIR/config.json" 2>/dev/null)
   local pbk=$(jq -r '.inbounds[0].streamSettings.realitySettings.privateKey' "$CONFIG_DIR/config.json" 2>/dev/null)
-  local pubkey_line=$(/usr/local/bin/xray x25519 -i "$pbk" 2>/dev/null | grep -oP '(?<=Password: )\S+')
+  local pubkey_line=$(/usr/local/bin/xray x25519 -i "$pbk" 2>/dev/null | grep -oE "(PublicKey|Password \(PublicKey\)): ?\S+" | head -1 | grep -oE "\S+$")
   [[ -z "$pubkey_line" ]] && pubkey_line="$pbk"
   local configs_js=""; local idx=0; local emojis=("🟢" "🟣" "🟠" "🔴" "🟤" "🔵")
   for entry in "${SNI_LIST[@]}"; do
@@ -562,7 +562,7 @@ show_info() {
   echo -e "${CYAN}══════════════════════════════════════${NC}"
   echo ""
   echo -e "${INFO}UUID: ${uuid}${NC}"
-  echo -e "${INFO}Public Key: $(/usr/local/bin/xray x25519 -i "$pbk" 2>/dev/null | grep Public | awk '{print $3}')${NC}"
+  echo -e "${INFO}Public Key: $(/usr/local/bin/xray x25519 -i "$pbk" 2>/dev/null | grep -oP '(?<=Password: )\S+')${NC}"
   echo ""
   local idx=0
   for entry in "${SNI_LIST[@]}"; do
