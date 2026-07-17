@@ -67,17 +67,14 @@
 
 ## ⚡ چجوری نصب کنم؟
 
+یکی خط کافیه — بقیه با منه:
 ```bash
-# یه خط — بقیه با من
-bash <(curl -sL https://github.com/sheshocked/RealityGhostPro/raw/main/RealityGhostPro.sh) install your-domain.com your@email.com
+bash <(curl -sL https://github.com/sheshocked/RealityGhostPro/raw/main/RealityGhostPro.sh) install
 ```
-
-اگه دوست داری با پرامپت:
+همین! بقیه رو ازت می‌پرسه. یا اگه خواستی مستقیم:
 ```bash
-git clone https://github.com/sheshocked/RealityGhostPro.git
-cd RealityGhostPro && chmod +x RealityGhostPro.sh
-./RealityGhostPro.sh install
-# فقط بزن domain و email — بقیه خودکار
+bash <(curl -sL https://github.com/sheshocked/RealityGhostPro/raw/main/RealityGhostPro.sh) install your-domain.com you@email.com
+```
 ```
 
 ---
