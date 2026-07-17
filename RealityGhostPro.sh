@@ -599,7 +599,7 @@ show_info() {
     idx=$((idx+1))
   done
   echo ""
-  echo -e "${CYAN}📊 پنل:${NC} https://${DOMAIN}/status/"
+  echo -e "${CYAN}📊 پنل:${NC} https://${DOMAIN}:${SUB_PORT}/status/"
   echo -e "${CYAN}📥 ساب:${NC} https://${DOMAIN}/sub"
   echo ""
 }
@@ -856,7 +856,7 @@ main_install() {
   echo -e "${GREEN}╔═══════════════════════════════╗${NC}"
   echo -e "${GREEN}║  نصب با موفقیت تموم شد! 🎉   ║${NC}"
   echo -e "${GREEN}╚═══════════════════════════════╝${NC}"
-  echo -e "  📊 پنل:  https://${DOMAIN}/status/"
+  echo -e "  📊 پنل:  https://${DOMAIN}:${SUB_PORT}/status/"
   echo -e "  📥 ساب:  https://${DOMAIN}/sub"
   show_info
 }
