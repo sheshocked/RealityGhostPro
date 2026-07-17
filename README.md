@@ -1,6 +1,6 @@
 # 🚀 RealityGhost PRO v4.2
 
-![Version](https://img.shields.io/badge/version-4.0-purple?style=flat-square)
+![Version](https://img.shields.io/badge/version-4.2-purple?style=flat-square)
 ![Xray](https://img.shields.io/badge/Xray-25.9.11-blue?style=flat-square)
 ![SSL](https://img.shields.io/badge/SSL-Let's%20Encrypt-green?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-orange?style=flat-square)
@@ -17,31 +17,17 @@
 |-------|---------|
 | ⚡ **VLESS+Reality** | پروتکل فوق سریع Xray با TLS 1.3 REALITY |
 | 🎯 **۶ SNI گوگل** | هر کانفیگ SNI + ShortId مخصوص خودش |
-| 🌍 **تشخیص لوکیشن** | پرچم کشور و نام لوکیشن به صورت خودکار بر اساس IP سرور |
-| 📊 **پنل وضعیت فارسی** | RTL، دیتای زنده، کارت‌های کپی با پرچم و نام لوکیشن |
-| 📦 **ساب‌اسکریپشن** | فرمت VlESS کامل با `allowinsecure=0` و `echfq=none` و `headerType=none` |
+| 🌍 **تشخیص لوکیشن** | پرچم کشور و نام لوکیشن به صورت خودکار بر اساس IP سرور (۲۱+ کشور) |
+| 📊 **پنل وضعیت فارسی** | RTL، دیتای زنده، کارت‌های کپی با پرچم |
+| 📦 **ساب‌اسکریپشن** | فرمت VlESS کامل با `allowinsecure=0`، `echfq=none`، `headerType=none` |
 | 🔐 **SSL خودکار** | Let's Encrypt با تمدید خودکار |
 | 🛡️ **فایروال هوشمند** | باز کردن خودکار پورت‌ها، مدیریت در منو |
-| 🔄 **چرخش Short IDs** | هر ۳ روز یکبار تغییر خودکار |
+| 🔄 **چرخش Short IDs** | هر ۳ روز یکبار تغییر خودکار با SIDهای ۱۶ بایتی منحصربفرد |
 | 📉 **مانیتورینگ** | CPU، RAM، Disk، ترافیک، Connections، Load |
 | 🗑️ **حذف کامل** | uninstall یکپارچه |
-
----
-
-## 🖼️ پیش‌نمایش
-
-```
-🌐 دامنه: lat.b5a.ir        📊 پنل: https://lat.b5a.ir/status/
-📍 لوکیشن: 🇱🇻 Latvia        📥 ساب: https://lat.b5a.ir/sub
-═══════════════════════════════
-🇱🇻 ✅ Google Static      → www.gstatic.com       sid: 53bad86c..
-🇱🇻 ✌ Google AJAX         → ajax.googleapis.com   sid: 80c987f7..
-🇱🇻 💠 Google Storage      → storage.googleapis.com sid: 9602acc1..
-🇱🇻 💏 Google Fonts        → fonts.gstatic.com     sid: 2a93f3fe..
-🇱🇻 📌 Google Fonts API    → fonts.googleapis.com  sid: 9cbcb163..
-🇱🇻 🌐 Google              → www.google.com        sid: 8bdbfbf9..
-═══════════════════════════════
-```
+| 🤖 **ربات تلگرام** | مدیریت کاربران، محدودیت حجم، تاریخ انقضا (اختیاری) |
+| 🚀 **بهینه‌سازی سیستم** | BBR، TCP buffer 16MB، FastOpen، File Descriptor limits |
+| 🆔 **UUID + ShortId یکتا** | هر بار نصب UUID و SIDهای متفاوت و رندوم |
 
 ---
 
@@ -66,13 +52,13 @@ sudo bash RealityGhostPro.sh install
 
 یا با متغیر محیطی (غیرتعاملی):
 ```bash
-sudo DOMAIN="lat.b5a.ir" EMAIL="info@kir.com" bash RealityGhostPro.sh install
+sudo DOMAIN="your-domain.com" EMAIL="your@email.com" bash RealityGhostPro.sh install
 ```
 
 ### بعد از نصب:
 ```
-📊 پنل وضعیت:  https://lat.b5a.ir/status/
-📥 ساب:        https://lat.b5a.ir/sub
+📊 پنل وضعیت:  https://your-domain.com/status/
+📥 ساب:        https://your-domain.com/sub
 ```
 
 ---
@@ -89,10 +75,11 @@ sudo bash RealityGhostPro.sh manage
 2. ⚙️ مدیریت کانفیگ‌ها
 3. 🔌 مدیریت پورت‌ها (فایروال)
 4. 🔄 چرخاندن Short IDs
-5. 🏗️ بازسازی ساب‌اسکریپشن
+5. 🏗️ بازسازی ساب‌اسکریپشن و پنل
 6. 🔄 ری‌استارت سرویس‌ها
-7. 🗑️ حذف کامل
-0. خروج
+7. 🤖 مدیریت ربات تلگرام
+8. 🔄 بروزرسانی از گیتهاب
+9. 🗑️ حذف کامل
 ```
 
 ---
@@ -100,15 +87,15 @@ sudo bash RealityGhostPro.sh manage
 ## 🔗 نمونه کانفیگ
 
 ```
-vless://9aad75d6-126c-4702-8ca3-c14d3fa8eb2e@lat.b5a.ir:443
+vless://YOUR-UUID@YOUR-DOMAIN:443
   ?flow=xtls-rprx-vision
   &encryption=none
   &security=reality
   &sni=ajax.googleapis.com
   &fp=chrome
   &echfq=none
-  &pbk=zsChSbmGHlNO0YRpvQIERelUFBHzm3SI2T9xw2J0F0Y
-  &sid=80c987f7e76803b9
+  &pbk=YOUR-PUBLIC-KEY
+  &sid=YOUR-SHORT-ID
   &allowinsecure=0
   &type=tcp
   &headerType=none
@@ -123,7 +110,7 @@ vless://9aad75d6-126c-4702-8ca3-c14d3fa8eb2e@lat.b5a.ir:443
 ┌─────────────┐     ┌───────────────────────────────────┐     ┌───────────┐
 │   Client    │────▶│  NGINX :443 (stream/ssl_preread)  │────▶│  Xray     │
 │  (VLESS)    │     │  ┌─ SNI=google.com ─▶ Xray TCP ┐  │     │  :8444    │
-│             │     │  └─ SNI=lat.b5a.ir ─▶ HTTP ────┘  │     │  Reality  │
+│             │     │  └─ SNI=your.domain ─▶ HTTP ───┘  │     │  Reality  │
 └─────────────┘     └───────────────────────────────────┘     └───────────┘
 ```
 
@@ -139,19 +126,28 @@ vless://9aad75d6-126c-4702-8ca3-c14d3fa8eb2e@lat.b5a.ir:443
 | `/var/www/html/status/index.html` | پنل وضعیت فارسی |
 | `/var/www/html/sub/sub.txt` | فایل ساب‌اسکریپشن (Base64) |
 | `/usr/local/bin/realityghost_monitor.sh` | اسکریپت مانیتورینگ |
+| `/usr/local/bin/rg-bot.py` | ربات تلگرام مدیریت کاربران |
+| `/etc/realityghost/users.db` | دیتابیس کاربران (SQLite) |
 | `/var/log/xray/access.log` | لاگ دسترسی Xray |
 | `/var/log/xray/error.log` | لاگ خطاهای Xray |
 
 ---
 
-## 📋 تغییرات نسخه v4.0
+## 📋 تغییرات نسخه
 
 [مشاهده تغییرات کامل](CHANGELOG.md)
 
+### v4.2
+- 🆔 **UUID + ShortId منحصربفرد** برای هر نصب (۶ SID رندوم)
+- 🚀 **بهینه‌سازی سیستم**: BBR، TCP buffer 16MB، FastOpen، FD limits 1048576
+- 🤖 **ربات تلگرام**: مدیریت کاربران، محدودیت حجم، تاریخ انقضا (اختیاری)
+- 🐛 رفع باگ‌های متداول (پورت اشغال، proxy_protocol و...)
+
+### v4.0
 - معماری بازنویسی شده: **حذف XHTTP**، فقط TCP Reality با ۶ SNI گوگل
-- **رفع باگ بزرگ**: حذف `proxy_protocol` از مسیر Xray (باعث اتصال TLS ناموفق می‌شد)
+- **رفع باگ بزرگ**: حذف `proxy_protocol` از مسیر Xray
 - **تشخیص خودکار لوکیشن**: پرچم و نام کشور بر اساس IP سرور
-- **پنل جدید**: RTL فارسی، فونت وزیرمتن، تم بنفش تیره، دکمه کپی
+- **پنل جدید**: RTL فارسی، فونت وزیرمتن، تم بنفش تیره
 - **ساب جدید**: فرمت VlESS با `allowinsecure=0`، `echfq=none`، `headerType=none`
 - **مدیریت پورت**: باز/بستن پورت‌ها از منو
 - **پیش‌بررسی**: تشخیص پورت‌های اشغال شده و DNS
@@ -161,7 +157,7 @@ vless://9aad75d6-126c-4702-8ca3-c14d3fa8eb2e@lat.b5a.ir:443
 
 ## 🐛 رفع باگ‌های متداول
 
-### پورت ۴۴３ اشغاله؟
+### پورت ۴۴۳ اشغاله؟
 اسکریپت هنگام نصب تشخیص میده و می‌پرسه خودکار آزادش کنه. یا بعداً با `manage → port manager` می‌تونی چک کنی.
 
 ### کانفیگ‌ها کار نمی‌کنه؟

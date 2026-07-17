@@ -280,7 +280,7 @@ SERVICE
 # ─── Install SSL Certificate ────────────────────────────────────────
 install_certbot() {
   if [[ -z "$DOMAIN" ]]; then
-    echo -ne "${INFO}دامنه رو وارد کن (مثلاً lat.b5a.ir): "
+    echo -ne "${INFO}دامنه رو وارد کن (مثلاً your-domain.com): "
     read -r DOMAIN
   fi
   if [[ -z "$EMAIL" ]]; then
@@ -1445,7 +1445,7 @@ main_install() {
 
   # Get domain + email
   if [[ -z "$DOMAIN" ]]; then
-    echo -ne "${BOLD}🌐 دامنه رو وارد کن (مثلاً lat.b5a.ir): ${NC}"
+    echo -ne "${BOLD}🌐 دامنه رو وارد کن (مثلاً your-domain.com): ${NC}"
     read -r DOMAIN
   fi
   if [[ -z "$EMAIL" ]]; then
@@ -1521,9 +1521,9 @@ case "${1,,}" in
     # Load existing config
     if [[ -f "$CONFIG_DIR/config.json" ]]; then
       DOMAIN=$(jq -r '.inbounds[0].settings.clients[0].email' "$CONFIG_DIR/config.json" 2>/dev/null | sed 's/user@//')
-      [[ -z "$DOMAIN" || "$DOMAIN" == "null" ]] && DOMAIN="lat.b5a.ir"
+      [[ -z "$DOMAIN" || "$DOMAIN" == "null" ]] && DOMAIN="your-domain.com"
     else
-      DOMAIN="${DOMAIN:-lat.b5a.ir}"
+      DOMAIN="${DOMAIN:-your-domain.com}"
     fi
     manage_menu
     ;;
