@@ -351,85 +351,90 @@ build_panel() {
   done
   mkdir -p "$STATUS_DIR"
   cat > "$STATUS_DIR/index.html" <<HTMLEOF
-<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>RG PRO • وضعیت سرور</title>
+<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>RG PRO</title>
 <style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#07070f;--bg2:#0b0b16;--card:rgba(14,14,40,0.7);--card2:rgba(18,18,50,0.5);--border:rgba(90,110,255,0.08);--text:#dcdcf0;--text2:#7878b0;--purple:#7c5cfc;--purple2:#a078ff;--green:#00d68f;--blue:#4a9eff;--yellow:#f0a030;--red:#f05060;--radius:18px;--radius-sm:12px;--shadow:0 8px 40px rgba(0,0,0,0.6)}
-body{font-family:Vazirmatn,sans-serif;background:var(--bg);color:var(--text);direction:rtl;background-image:radial-gradient(ellipse at 15% 30%,rgba(124,92,252,0.05) 0%,transparent 60%)}
-.wrap{max-width:1260px;margin:0 auto;padding:16px}
-.hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 20px;margin-bottom:20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);backdrop-filter:blur(16px)}
-.hdr-t h1{font-size:17px;font-weight:800}.hdr-t p{font-size:12px;color:var(--text2)}
-.hdr-b{padding:4px 12px;border-radius:100px;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
-.hdr-b.live{background:rgba(0,214,143,0.1);color:var(--green);border:1px solid rgba(0,214,143,0.15)}
-.hdr-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-.sr{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
-.sc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;min-height:90px}
-.sc:hover{background:var(--card2)}.sc-l{font-size:11px;color:var(--text2)}.sc-v{font-size:22px;font-weight:800;direction:ltr}
-.g2{display:grid;grid-template-columns:2.2fr 1fr;gap:20px;margin-bottom:20px}
-.sec{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;backdrop-filter:blur(12px)}
-.sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(90,110,255,0.06)}
-.sec-t{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
-.rg{display:flex;flex-direction:column;gap:14px}
-.ri-bar{height:6px;border-radius:100px;background:rgba(255,255,255,0.03);overflow:hidden}
-.ri-fill{height:100%;border-radius:100px;transition:width 1.2s cubic-bezier(0.22,1,0.36,1)}
-.ri-fill.b{background:linear-gradient(90deg,#5a3fd4,#7c5cfc)}.ri-fill.g{background:linear-gradient(90deg,#00b87a,#00d68f)}
-.ri-fill.y{background:linear-gradient(90deg,#d49020,#f0a030)}.ri-fill.r{background:linear-gradient(90deg,#d04048,#f05060)}
-.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.scd{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:var(--radius-sm);padding:14px;text-align:center}
-.scd-s{font-size:11px;font-weight:600}.up{color:var(--green)}.down{color:var(--red)}
-.ll{display:flex;flex-direction:column;gap:8px}
-.li{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);text-decoration:none;color:var(--text);cursor:pointer;flex-wrap:wrap}
-.li:hover{background:rgba(124,92,252,0.06);border-color:rgba(124,92,252,0.15)}
-.li-t{flex:1;min-width:180px}.li-t strong{display:block;font-size:12px}
-.li-sni{font-size:10px;color:var(--purple2);direction:ltr;display:block}
-.li-sid{font-size:9px;color:var(--text3);direction:ltr;display:block;font-family:monospace}
-.li-c{font-size:10px;padding:3px 10px;border-radius:6px;background:rgba(255,255,255,0.05);color:var(--text2);border:none;cursor:pointer}
-.li-c:hover{background:rgba(124,92,252,0.15);color:var(--purple2)}
-.ftr{text-align:center;padding:20px 0;font-size:11px;color:var(--text3);border-top:1px solid rgba(255,255,255,0.02);margin-top:24px}
-.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(14,14,40,0.95);border:1px solid rgba(0,214,143,0.3);border-radius:var(--radius-sm);padding:10px 20px;font-size:13px;color:var(--green);opacity:0;transition:all .35s;z-index:999}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-@media(max-width:640px){.sr{grid-template-columns:repeat(2,1fr)}.li{flex-direction:column}.g2{grid-template-columns:1fr}}
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a14;--c:rgba(16,16,44,0.7);--b:rgba(90,110,255,0.07);--t:#e0e0f4;--t2:#7878b0;--p:#7c5cfc;--g:#00d68f;--y:#f0a030;--r:#f05060;--br:14px}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--t)}
+.w{max-width:1200px;margin:0 auto;padding:16px}
+.hd{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 18px;background:var(--c);border:1px solid var(--b);border-radius:var(--br);margin-bottom:18px}
+.hd h1{font-size:16px;font-weight:700}
+.hd b{color:var(--p)}
+.st{background:rgba(0,214,143,0.1);color:var(--g);padding:3px 10px;border-radius:100px;font-size:10px;display:flex;align-items:center;gap:5px}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--g)}
+.gr{display:grid;grid-gap:12px;margin-bottom:18px}
+.gr-6{grid-template-columns:repeat(6,1fr)}
+.gr-2{grid-template-columns:1fr 1fr}
+.gr-4{grid-template-columns:repeat(4,1fr)}
+.s{background:var(--c);border:1px solid var(--b);border-radius:var(--br);padding:14px}
+.s-l{font-size:10px;color:var(--t2);margin-bottom:4px}
+.s-v{font-size:20px;font-weight:700}
+.sm{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:10px;cursor:pointer;gap:8px;flex-wrap:wrap}
+.sm:hover{background:rgba(124,92,252,0.06)}
+.sm-l{font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px}
+.sm-s{font-size:10px;color:var(--p);direction:ltr}
+.sm-id{font-size:9px;color:var(--t2);font-family:monospace;direction:ltr}
+.sm-c{font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,0.05);color:var(--t2);border:none;cursor:pointer}
+.sm-c:hover{background:rgba(124,92,252,0.2);color:var(--p)}
+.br{height:5px;border-radius:100px;background:rgba(255,255,255,0.04);overflow:hidden;margin-top:6px}
+.bf{height:100%;border-radius:100px;transition:width 1s}
+.sv{display:flex;gap:8px;flex-wrap:wrap}
+.svc{padding:8px 12px;border-radius:8px;font-size:11px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
+.svc.o{color:var(--g);border-color:rgba(0,214,143,0.2)}
+.svc.x{color:var(--t2)}
+.ft{padding:16px 0;text-align:center;font-size:10px;color:var(--t2);border-top:1px solid rgba(255,255,255,0.02);margin-top:20px}
+.tst{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(12,12,36,0.95);border:1px solid rgba(0,214,143,0.3);border-radius:10px;padding:8px 16px;font-size:12px;color:var(--g);opacity:0;transition:.35s;z-index:999}
+.tst.s{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:780px){.gr-6{grid-template-columns:repeat(3,1fr)}.gr-2{grid-template-columns:1fr}}
+@media(max-width:450px){.gr-6{grid-template-columns:repeat(2,1fr)}.gr-4{grid-template-columns:repeat(2,1fr)}}
 </style></head><body>
-<div class="wrap" id="app">
-<header class="hdr"><div class="hdr-t"><h1>RealityGhost <span style="color:var(--purple2)">PRO</span></h1><p>${DOMAIN}</p></div><div class="hdr-l"><span class="hdr-b live"><span class="hdr-dot"></span> آنلاین</span></div></header>
-<div class="sr" id="sr">
-<div class="sc"><span class="sc-l">🧠 RAM</span><div class="sc-v" id="s-ram">—</div></div>
-<div class="sc"><span class="sc-l">⚡ CPU</span><div class="sc-v" id="s-cpu">—</div></div>
-<div class="sc"><span class="sc-l">💾 Disk</span><div class="sc-v" id="s-disk">—</div></div>
-<div class="sc"><span class="sc-l">🔗 Connections</span><div class="sc-v" id="s-conn">—</div></div>
-<div class="sc"><span class="sc-l">⏱️ Uptime</span><div class="sc-v" id="s-uptime">—</div></div>
-<div class="sc"><span class="sc-l">🚀 Xray</span><div class="sc-v" id="s-xray">—</div></div>
+<div class=w>
+<div class=hd><h1>👻 RealityGhost <b>PRO</b></h1><span class=st><span class=dot></span>Online</span></div>
+
+<div class="gr gr-6" id=stx></div>
+
+<div class="gr gr-2">
+<div><div class=s style=margin-bottom:12px><div style=display:flex;justify-content:space-between;margin-bottom:8px><span style=font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px>🖥 System</span><span id=upt style=font-size:11px;color:var(--t2)>—</span></div>
+<div style=margin-bottom:10px><div style=display:flex;justify-content:space-between;font-size:11px;color:var(--t2)><span>RAM <span id=rlu>—</span></span><span id=rp>—</span></div><div class=br><div class="bf b" id=rf style=width:0%></div></div></div>
+<div style=margin-bottom:10px><div style=display:flex;justify-content:space-between;font-size:11px;color:var(--t2)><span>CPU <span id=clu>—</span></span><span id=cp>—</span></div><div class=br><div class="bf g" id=cf style=width:0%></div></div></div>
+<div><div style=display:flex;justify-content:space-between;font-size:11px;color:var(--t2)><span>Disk <span id=du>—</span></span><span id=dp>—</span></div><div class=br><div class="bf y" id=df style=width:0%></div></div></div>
 </div>
-<div class="g2"><div>
-<div class="sec" style="margin-bottom:20px"><div class="sec-h"><div class="sec-t">🖥️ Resources</div></div>
-<div class="rg">
-<div class="ri"><div class="ri-bar"><div class="ri-fill b" id="ram-f" style="width:0%"></div></div></div>
-<div class="ri"><div class="ri-bar"><div class="ri-fill g" id="cpu-f" style="width:0%"></div></div></div>
-<div class="ri"><div class="ri-bar"><div class="ri-fill y" id="disk-f" style="width:0%"></div></div></div>
-</div></div></div><div>
-<div class="sec" style="margin-bottom:20px"><div class="sec-h"><div class="sec-t">🔧 Services</div></div>
-<div class="sg">
-<div class="scd"><div class="scd-s up" id="ns">🌐 NGINX</div></div>
-<div class="scd"><div class="scd-s up" id="xs">🚀 Xray</div></div>
-<div class="scd"><div class="scd-s up" id="ms">📡 Monitor</div></div>
-<div class="scd"><div class="scd-s up" id="ss">🔒 SSL</div></div>
+
+<div class=s style=margin-bottom:12px><div style=display:flex;justify-content:space-between;margin-bottom:10px><span style=font-size:12px;font-weight:700>📡 Traffic</span></div>
+<div class="gr gr-4">
+<div class=s style=padding:10px><div class=s-l>Today</div><div class=s-v id=td style=font-size:14px>—</div></div>
+<div class=s style=padding:10px><div class=s-l>Month</div><div class=s-v id=mo style=font-size:14px>—</div></div>
+<div class=s style=padding:10px><div class=s-l>Total</div><div class=s-v id=tot style=font-size:14px>—</div></div>
+<div class=s style=padding:10px><div class=s-l>Xray</div><div class=s-v id=xv style=font-size:14px>—</div></div>
 </div></div>
-<div class="sec"><div class="sec-h"><div class="sec-t">🔗 Links</div><button class="li-c" onclick="cpAll()">📋 Copy All</button></div>
-<div class="ll" id="links-list"></div></div></div></div></div>
-<div class="toast" id="toast"></div>
+
+<div class=s><div style=display:flex;justify-content:space-between;margin-bottom:10px><span style=font-size:12px;font-weight:700>🔧 Services</span></div>
+<div class=sv id=svc></div></div>
+</div>
+
+<div><div class=s><div style=display:flex;justify-content:space-between;align-items:center;margin-bottom:12px><span style=font-size:12px;font-weight:700>🔗 Configs</span><button class=sm-c onclick=cpA() style=padding:4px12px>📋 All</button></div>
+<div id=links></div></div>
+
+<div class=s style=margin-top:12px><div style=font-size:12px;font-weight:700;margin-bottom:8px>⚡ Quick Copy</div>
+<div class="sv" id=qck></div></div>
+</div></div>
+
+<div class=ft>RG PRO v5.1</div></div>
+<div class=tst id=t></div>
+
 <script>
-var D="${DOMAIN}",U="${uuid}",P="${pubkey_line}";
-var CONFIGS=[${configs_js}];
-function buildLink(c){return 'vless://'+U+'@'+D+':443?encryption=none&flow=xtls-rprx-vision&security=reality&sni='+c.sni+'&fp=chrome&pbk='+P+'&sid='+c.sid+'&type=tcp#'+encodeURIComponent(c.label)}
-function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},1800)}
-function cp(s){var c=CONFIGS.find(function(x){return x.sni===s});var t=c?buildLink(c):(s==='sub'?'https://'+D+'/sub':'');if(!t)return;navigator.clipboard&&navigator.clipboard.writeText(t).then(function(){toast('✓ Copied')})||toast('👆 manual')}
-function cpAll(){var a=CONFIGS.map(function(x){return buildLink(x)}).join('\n')+'\nhttps://'+D+'/sub';navigator.clipboard&&navigator.clipboard.writeText(a).then(function(){toast('✓ All copied')})||toast('👆 manual')}
-function buildLinks(){var b=document.getElementById('links-list');if(!b)return;b.innerHTML='';CONFIGS.forEach(function(c){var e=document.createElement('div');e.className='li';e.onclick=function(){cp(c.sni)};e.innerHTML='<div class="li-t"><strong>'+c.emoji+' '+c.label+'</strong><span class="li-sni">sni: '+c.sni+'</span><span class="li-sid">sid: '+c.sid+'</span></div><span class="li-c" onclick="event.stopPropagation();cp(\''+c.sni+'\')">📋 Copy</span>';b.appendChild(e)})}
-function fetchData(){var x=new XMLHttpRequest();x.open('GET','/status/stats.json?t='+Date.now(),true);x.timeout=5000;x.onload=function(){if(x.status===200){try{var d=JSON.parse(x.responseText);document.getElementById('s-ram').textContent=d.ram.used+'/'+d.ram.total+'MB';document.getElementById('s-cpu').textContent=d.cpu+'%';document.getElementById('s-disk').textContent=d.disk.used+'/'+d.disk.total;document.getElementById('s-conn').textContent=d.connections||'0';document.getElementById('s-uptime').textContent=d.uptime||'—';document.getElementById('s-xray').textContent=d.xray_version||'—';document.getElementById('ram-f').style.width=Math.min(d.ram.usage,100)+'%';document.getElementById('cpu-f').style.width=Math.min(parseFloat(d.cpu)||0,100)+'%';var du=parseInt(d.disk.usage)||0;document.getElementById('disk-f').style.width=Math.min(du,100)+'%';var sv=d.services||{};['ns','xs','ms'].forEach(function(id){var e=document.getElementById(id);var s=['nginx','xray','monitor'][['ns','xs','ms'].indexOf(id)];e.className='scd-s '+(sv[s]==='active'?'up':'down')});document.getElementById('ss').className='scd-s '+(d.dns_ok?'up':'down')}catch(e){}}};x.send()}
-buildLinks();fetchData();setInterval(fetchData,3000);
+var D='${DOMAIN}',U='${uuid}',P='${pubkey_line}';
+var CS=[{s:'www.gstatic.com',l:'Google Static',e:'🟢',i:'6c17063bbbc2815f'},{s:'ajax.googleapis.com',l:'Google AJAX',e:'🟣',i:'45b782b0ab099836'},{s:'storage.googleapis.com',l:'Google Storage',e:'🟠',i:'2a24f880f00bd81c'},{s:'fonts.gstatic.com',l:'Google Fonts',e:'🔴',i:'5e477f536f9d3d13'},{s:'fonts.googleapis.com',l:'Google Fonts API',e:'🟤',i:'faf18e55b6abd0e5'},{s:'www.google.com',l:'Google',e:'🔵',i:'f3eb44acd99a0125'}];
+function lk(c){return 'vless://'+U+'@'+D+':443?encryption=none&flow=xtls-rprx-vision&security=reality&fp=chrome&type=tcp&headerType=none&sni='+c.s+'&pbk='+P+'&sid='+c.i+'#'+encodeURIComponent('🇱🇻 '+c.l)}
+function to(m){var t=document.getElementById('t');t.textContent=m;t.classList.add('s');setTimeout(function(){t.classList.remove('s')},1600)}
+function cp(s){var c=CS.find(function(x){return x.s===s});if(!c)return;navigator.clipboard.writeText(lk(c)).then(function(){to('✓ '+c.l)})||to('👆 manual')}
+function cpA(){var a=CS.map(function(x){return lk(x)}).join('\n')+'\nhttps://'+D+'/sub';navigator.clipboard.writeText(a).then(function(){to('✓ All copied')})||to('👆 manual')}
+function bd(){var h=document.getElementById('links');if(!h)return;h.innerHTML='';CS.forEach(function(c){var e=document.createElement('div');e.className='sm';e.onclick=function(){cp(c.s)};e.innerHTML='<span class=sm-l>'+c.e+' '+c.l+'</span><span class=sm-s>'+c.s+'</span><span class=sm-id>'+c.i+'</span>';h.appendChild(e)});var q=document.getElementById('qck');q.innerHTML='';CS.slice(0,3).forEach(function(c){var e=document.createElement('span');e.className='svc o';e.textContent=c.e+' '+c.l;e.onclick=function(){cp(c.s)};q.appendChild(e)})}
+function fmt(b){if(!b||b==0)return'0B';var u=['B','KB','MB','GB','TB'];var i=0;var n=Number(b);while(n>=1024&&i<u.length-1){n/=1024;i++}return n.toFixed(i==0?0:1)+u[i]}
+function fd(){var x=new XMLHttpRequest();x.open('GET','/status/stats.json?t='+Date.now(),true);x.timeout=5000;x.onload=function(){if(x.status!==200)return;try{var d=JSON.parse(x.responseText);var stx=document.getElementById('stx');stx.innerHTML='<div class=s><div class=s-l>🧠 RAM</div><div class=s-v>'+d.ram.used+'/'+d.ram.total+'MB</div></div><div class=s><div class=s-l>⚡ CPU</div><div class=s-v>'+d.cpu+'%</div></div><div class=s><div class=s-l>💾 Disk</div><div class=s-v>'+d.disk.used+'/'+d.disk.total+'</div></div><div class=s><div class=s-l>🔗 Conn</div><div class=s-v>'+d.connections+'</div></div><div class=s><div class=s-l>🌐 Load</div><div class=s-v style=font-size:14px>'+d.load['1m']+'</div></div><div class=s><div class=s-l>🚀 Xray</div><div class=s-v style=font-size:14px>'+d.xray_version+'</div></div>';document.getElementById('upt').textContent='⏱ '+d.uptime;document.getElementById('rlu').textContent=d.ram.used+'/'+d.ram.total+'MB';document.getElementById('rp').textContent=d.ram.usage+'%';document.getElementById('rf').style.width=Math.min(d.ram.usage,100)+'%';document.getElementById('clu').textContent=d.cpu+'%';document.getElementById('cp').textContent=d.cpu+'%';document.getElementById('cf').style.width=Math.min(parseFloat(d.cpu)||0,100)+'%';document.getElementById('du').textContent=d.disk.used+'/'+d.disk.total;document.getElementById('dp').textContent=d.disk.usage+'%';document.getElementById('df').style.width=Math.min(parseInt(d.disk.usage)||0,100)+'%';document.getElementById('td').textContent=fmt(d.traffic.today);document.getElementById('mo').textContent=fmt(d.traffic.month);document.getElementById('tot').textContent=fmt(d.traffic.total);document.getElementById('xv').textContent=d.xray_version;var svc=document.getElementById('svc');s=d.services;svc.innerHTML='<span class="svc '+(s.nginx==='active'?'o':'x')+'">🌐 NGINX '+(s.nginx==='active'?'✓':'✗')+'</span><span class="svc '+(s.xray==='active'?'o':'x')+'">🚀 Xray '+(s.xray==='active'?'✓':'✗')+'</span><span class="svc '+(s.monitor==='active'?'o':'x')+'">📡 Monitor '+(s.monitor==='active'?'✓':'✗')+'</span><span class="svc '+(d.dns_ok?'o':'x')+'">🔒 SSL '+(d.dns_ok?'✓':'✗')+'</span>'}catch(e){}};x.send()}
+bd();fd();setInterval(fd,5000);
 </script></body></html>
+
 HTMLEOF
   chown -R www-data:www-data "$STATUS_DIR" 2>/dev/null
   echo -e "${OK}Panel built"
