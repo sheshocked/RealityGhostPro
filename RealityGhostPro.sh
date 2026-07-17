@@ -521,7 +521,7 @@ var ct=Object.values(s).filter(function(v){return v==='active'}).length;document
 var a=ct===3&&d.dns_ok;document.getElementById('stl').textContent=a?'All Systems Online':'⚠ Issues';document.getElementById('stb').className='stt'+(a?'':' r');document.getElementById('std').className='dot'+(a?'':' r');
 document.getElementById('s_upd').textContent=d.timestamp.slice(11,16)+' UTC';
 // Network fields
-document.getElementById('nip').textContent='${SERVER_IP}';document.getElementById('dns').textContent='1.1.1.1, 8.8.8.8';
+document.getElementById('nip').textContent='${SERVER_IP}';document.getElementById('dns').textContent='9.9.9.9, 9.9.9.12, 149.112.112.112';
 document.getElementById('sip').textContent='${SERVER_IP}';document.getElementById('scpu').textContent='3 Cores';
 document.getElementById('tcpcc').textContent='BBR';document.getElementById('iface').textContent='eth0';document.getElementById('sos').textContent='Ubuntu 24.04';
 document.getElementById('ftr').textContent='Updated '+d.timestamp.slice(11,16)+' UTC'}catch(e){}};x.send()}
