@@ -351,45 +351,84 @@ build_panel() {
   done
   mkdir -p "$STATUS_DIR"
   cat > "$STATUS_DIR/index.html" <<HTMLEOF
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>RG PRO</title>
+<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>RG PRO • وضعیت سرور</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#07070f;--card:rgba(14,14,40,0.7);--border:rgba(90,110,255,0.08);--text:#dcdcf0;--text2:#7878b0;--purple:#7c5cfc;--green:#00d68f}
-body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);background-image:radial-gradient(ellipse at 15% 30%,rgba(124,92,252,0.05) 0%,transparent 60%)}
-.wrap{max-width:1200px;margin:0 auto;padding:16px}
-.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:14px}
-.hdr h1{font-size:16px}.hdr span{padding:4px 10px;border-radius:100px;background:rgba(0,214,143,0.1);color:var(--green);font-size:10px}
-.sr{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}
-.sc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px}.sc-l{font-size:10px;color:var(--text2)}.sc-v{font-size:18px;font-weight:700}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.sec{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#07070f;--bg2:#0b0b16;--card:rgba(14,14,40,0.7);--card2:rgba(18,18,50,0.5);--border:rgba(90,110,255,0.08);--text:#dcdcf0;--text2:#7878b0;--purple:#7c5cfc;--purple2:#a078ff;--green:#00d68f;--blue:#4a9eff;--yellow:#f0a030;--red:#f05060;--radius:18px;--radius-sm:12px;--shadow:0 8px 40px rgba(0,0,0,0.6)}
+body{font-family:Vazirmatn,sans-serif;background:var(--bg);color:var(--text);direction:rtl;background-image:radial-gradient(ellipse at 15% 30%,rgba(124,92,252,0.05) 0%,transparent 60%)}
+.wrap{max-width:1260px;margin:0 auto;padding:16px}
+.hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 20px;margin-bottom:20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);backdrop-filter:blur(16px)}
+.hdr-t h1{font-size:17px;font-weight:800}.hdr-t p{font-size:12px;color:var(--text2)}
+.hdr-b{padding:4px 12px;border-radius:100px;font-size:10px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+.hdr-b.live{background:rgba(0,214,143,0.1);color:var(--green);border:1px solid rgba(0,214,143,0.15)}
+.hdr-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+.sr{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;min-height:90px}
+.sc:hover{background:var(--card2)}.sc-l{font-size:11px;color:var(--text2)}.sc-v{font-size:22px;font-weight:800;direction:ltr}
+.g2{display:grid;grid-template-columns:2.2fr 1fr;gap:20px;margin-bottom:20px}
+.sec{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;backdrop-filter:blur(12px)}
+.sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(90,110,255,0.06)}
+.sec-t{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.rg{display:flex;flex-direction:column;gap:14px}
+.ri-bar{height:6px;border-radius:100px;background:rgba(255,255,255,0.03);overflow:hidden}
+.ri-fill{height:100%;border-radius:100px;transition:width 1.2s cubic-bezier(0.22,1,0.36,1)}
+.ri-fill.b{background:linear-gradient(90deg,#5a3fd4,#7c5cfc)}.ri-fill.g{background:linear-gradient(90deg,#00b87a,#00d68f)}
+.ri-fill.y{background:linear-gradient(90deg,#d49020,#f0a030)}.ri-fill.r{background:linear-gradient(90deg,#d04048,#f05060)}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.scd{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:var(--radius-sm);padding:14px;text-align:center}
+.scd-s{font-size:11px;font-weight:600}.up{color:var(--green)}.down{color:var(--red)}
 .ll{display:flex;flex-direction:column;gap:8px}
-.li{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);cursor:pointer}
-.li:hover{background:rgba(124,92,252,0.06)}.li strong{display:block;font-size:12px}.li-sni{font-size:10px;color:var(--purple);direction:ltr}
-.sysg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
-.sysc{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:10px;padding:12px;text-align:center;font-size:12px}
-.sysc.ok{color:var(--green)}.sysc.bad{color:#f05060}
-.ftr{text-align:center;padding:16px;font-size:10px;color:var(--text2);margin-top:20px;border-top:1px solid rgba(255,255,255,0.02)}
-@media(max-width:640px){.sr{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}}
-</style>
-</head>
-<body><div class="wrap">
-<header class="hdr"><h1>👻 RealityGhost <span style="color:var(--purple)">PRO</span></h1><span><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--green);margin-left:4px"></span>Online</span></header>
-<div class="sr" id="stats"></div>
-<div class="g2"><div class="sec"><span style="font-size:13px;font-weight:700;display:block;margin-bottom:12px">🔗 Configs</span><div class="ll" id="links"></div></div><div class="sec"><span style="font-size:13px;font-weight:700;display:block;margin-bottom:12px">🔧 Services</span><div class="sysg" id="services"></div></div></div>
-<div class="ftr">RG PRO v5.1</div></div>
+.li{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);text-decoration:none;color:var(--text);cursor:pointer;flex-wrap:wrap}
+.li:hover{background:rgba(124,92,252,0.06);border-color:rgba(124,92,252,0.15)}
+.li-t{flex:1;min-width:180px}.li-t strong{display:block;font-size:12px}
+.li-sni{font-size:10px;color:var(--purple2);direction:ltr;display:block}
+.li-sid{font-size:9px;color:var(--text3);direction:ltr;display:block;font-family:monospace}
+.li-c{font-size:10px;padding:3px 10px;border-radius:6px;background:rgba(255,255,255,0.05);color:var(--text2);border:none;cursor:pointer}
+.li-c:hover{background:rgba(124,92,252,0.15);color:var(--purple2)}
+.ftr{text-align:center;padding:20px 0;font-size:11px;color:var(--text3);border-top:1px solid rgba(255,255,255,0.02);margin-top:24px}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(14,14,40,0.95);border:1px solid rgba(0,214,143,0.3);border-radius:var(--radius-sm);padding:10px 20px;font-size:13px;color:var(--green);opacity:0;transition:all .35s;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@media(max-width:640px){.sr{grid-template-columns:repeat(2,1fr)}.li{flex-direction:column}.g2{grid-template-columns:1fr}}
+</style></head><body>
+<div class="wrap" id="app">
+<header class="hdr"><div class="hdr-t"><h1>RealityGhost <span style="color:var(--purple2)">PRO</span></h1><p>${DOMAIN}</p></div><div class="hdr-l"><span class="hdr-b live"><span class="hdr-dot"></span> آنلاین</span></div></header>
+<div class="sr" id="sr">
+<div class="sc"><span class="sc-l">🧠 RAM</span><div class="sc-v" id="s-ram">—</div></div>
+<div class="sc"><span class="sc-l">⚡ CPU</span><div class="sc-v" id="s-cpu">—</div></div>
+<div class="sc"><span class="sc-l">💾 Disk</span><div class="sc-v" id="s-disk">—</div></div>
+<div class="sc"><span class="sc-l">🔗 Connections</span><div class="sc-v" id="s-conn">—</div></div>
+<div class="sc"><span class="sc-l">⏱️ Uptime</span><div class="sc-v" id="s-uptime">—</div></div>
+<div class="sc"><span class="sc-l">🚀 Xray</span><div class="sc-v" id="s-xray">—</div></div>
+</div>
+<div class="g2"><div>
+<div class="sec" style="margin-bottom:20px"><div class="sec-h"><div class="sec-t">🖥️ Resources</div></div>
+<div class="rg">
+<div class="ri"><div class="ri-bar"><div class="ri-fill b" id="ram-f" style="width:0%"></div></div></div>
+<div class="ri"><div class="ri-bar"><div class="ri-fill g" id="cpu-f" style="width:0%"></div></div></div>
+<div class="ri"><div class="ri-bar"><div class="ri-fill y" id="disk-f" style="width:0%"></div></div></div>
+</div></div></div><div>
+<div class="sec" style="margin-bottom:20px"><div class="sec-h"><div class="sec-t">🔧 Services</div></div>
+<div class="sg">
+<div class="scd"><div class="scd-s up" id="ns">🌐 NGINX</div></div>
+<div class="scd"><div class="scd-s up" id="xs">🚀 Xray</div></div>
+<div class="scd"><div class="scd-s up" id="ms">📡 Monitor</div></div>
+<div class="scd"><div class="scd-s up" id="ss">🔒 SSL</div></div>
+</div></div>
+<div class="sec"><div class="sec-h"><div class="sec-t">🔗 Links</div><button class="li-c" onclick="cpAll()">📋 Copy All</button></div>
+<div class="ll" id="links-list"></div></div></div></div></div>
+<div class="toast" id="toast"></div>
 <script>
-var D='${DOMAIN}',U='${uuid}',P='${pubkey_line}';
+var D="${DOMAIN}",U="${uuid}",P="${pubkey_line}";
 var CONFIGS=[${configs_js}];
-function lk(c){return 'vless://'+U+'@'+D+':443?encryption=none&flow=xtls-rprx-vision&security=reality&fp=chrome&type=tcp&headerType=none&sni='+c.sni+'&pbk='+P+'&sid='+c.sid+'#'+encodeURIComponent(c.label)}
-function bd(){var h=document.getElementById('links');if(!h)return;CONFIGS.forEach(function(c){var e=document.createElement('div');e.className='li';e.onclick=function(){navigator.clipboard.writeText(lk(c));alert('✅ Copied')};e.innerHTML='<div><strong>'+c.emoji+' '+c.label+'</strong><span class="li-sni">'+c.sni+'</span></div>';h.appendChild(e)})}
-function fd(){var x=new XMLHttpRequest();x.open('GET','/status/stats.json?t='+Date.now(),true);x.onload=function(){if(x.status!==200)return;try{var d=JSON.parse(x.responseText);var s=document.getElementById('stats');s.innerHTML='<div class="sc"><div class="sc-l">🧠 RAM</div><div class="sc-v">'+d.ram.used+'/'+d.ram.total+'MB</div></div><div class="sc"><div class="sc-l">⚡ CPU</div><div class="sc-v">'+d.cpu+'%</div></div><div class="sc"><div class="sc-l">💾 Disk</div><div class="sc-v">'+d.disk.used+'/'+d.disk.total+'</div></div><div class="sc"><div class="sc-l">🔗 Connections</div><div class="sc-v">'+d.connections+'</div></div><div class="sc"><div class="sc-l">🕐 Uptime</div><div class="sc-v">'+d.uptime+'</div></div><div class="sc"><div class="sc-l">🚀 Xray</div><div class="sc-v">'+d.xray_version+'</div></div>';var sv=document.getElementById('services');nv=d.services.nginx==='active'?'ok':'bad';xv=d.services.xray==='active'?'ok':'bad';mv=d.services.monitor==='active'?'ok':'bad';dv=d.dns_ok?'ok':'bad';sv.innerHTML='<div class="sysc '+nv+'">🌐 NGINX</div><div class="sysc '+xv+'">🚀 Xray</div><div class="sysc '+mv+'">📡 Monitor</div><div class="sysc '+dv+'">🔒 SSL</div>'}catch(e){}};x.send()}
-bd();fd();setInterval(fd,3000);
+function buildLink(c){return 'vless://'+U+'@'+D+':443?encryption=none&flow=xtls-rprx-vision&security=reality&sni='+c.sni+'&fp=chrome&pbk='+P+'&sid='+c.sid+'&type=tcp#'+encodeURIComponent(c.label)}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},1800)}
+function cp(s){var c=CONFIGS.find(function(x){return x.sni===s});var t=c?buildLink(c):(s==='sub'?'https://'+D+'/sub':'');if(!t)return;navigator.clipboard&&navigator.clipboard.writeText(t).then(function(){toast('✓ Copied')})||toast('👆 manual')}
+function cpAll(){var a=CONFIGS.map(function(x){return buildLink(x)}).join('\n')+'\nhttps://'+D+'/sub';navigator.clipboard&&navigator.clipboard.writeText(a).then(function(){toast('✓ All copied')})||toast('👆 manual')}
+function buildLinks(){var b=document.getElementById('links-list');if(!b)return;b.innerHTML='';CONFIGS.forEach(function(c){var e=document.createElement('div');e.className='li';e.onclick=function(){cp(c.sni)};e.innerHTML='<div class="li-t"><strong>'+c.emoji+' '+c.label+'</strong><span class="li-sni">sni: '+c.sni+'</span><span class="li-sid">sid: '+c.sid+'</span></div><span class="li-c" onclick="event.stopPropagation();cp(\''+c.sni+'\')">📋 Copy</span>';b.appendChild(e)})}
+function fetchData(){var x=new XMLHttpRequest();x.open('GET','/status/stats.json?t='+Date.now(),true);x.timeout=5000;x.onload=function(){if(x.status===200){try{var d=JSON.parse(x.responseText);document.getElementById('s-ram').textContent=d.ram.used+'/'+d.ram.total+'MB';document.getElementById('s-cpu').textContent=d.cpu+'%';document.getElementById('s-disk').textContent=d.disk.used+'/'+d.disk.total;document.getElementById('s-conn').textContent=d.connections||'0';document.getElementById('s-uptime').textContent=d.uptime||'—';document.getElementById('s-xray').textContent=d.xray_version||'—';document.getElementById('ram-f').style.width=Math.min(d.ram.usage,100)+'%';document.getElementById('cpu-f').style.width=Math.min(parseFloat(d.cpu)||0,100)+'%';var du=parseInt(d.disk.usage)||0;document.getElementById('disk-f').style.width=Math.min(du,100)+'%';var sv=d.services||{};['ns','xs','ms'].forEach(function(id){var e=document.getElementById(id);var s=['nginx','xray','monitor'][['ns','xs','ms'].indexOf(id)];e.className='scd-s '+(sv[s]==='active'?'up':'down')});document.getElementById('ss').className='scd-s '+(d.dns_ok?'up':'down')}catch(e){}}};x.send()}
+buildLinks();fetchData();setInterval(fetchData,3000);
 </script></body></html>
 HTMLEOF
   chown -R www-data:www-data "$STATUS_DIR" 2>/dev/null
