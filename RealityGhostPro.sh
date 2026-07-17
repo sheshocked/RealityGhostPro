@@ -537,27 +537,27 @@ port_manager() {
   while true; do
     clear
     echo -e "${CYAN}══════════════════════════${NC}"
-    echo -e "${CYAN}   🔌 مدیریت پورت‌ها${NC}"
+    echo -e "${CYAN}   🔌 Port Manager${NC}"
     echo -e "${CYAN}══════════════════════════${NC}"
-    echo "1. پورت‌های باز (iptables)"
-    echo "2. باز کردن پورت"
-    echo "3. بستن پورت"
-    echo "4. پورت‌های در حال Listen"
-    echo "0. برگشت"
-    echo -ne "${BOLD}انتخاب: ${NC}"
+    echo "1. Show open ports (iptables)"
+    echo "2. Open port"
+    echo "3. Close port"
+    echo "4. Show listening ports"
+    echo "0. Back"
+    echo -ne "${BOLD}Choice: ${NC}"
     read -r opt
     case $opt in
       1) iptables -L INPUT -n --line-numbers 2>/dev/null | grep ACCEPT | grep -E "tcp|udp"
          echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
-      2) echo -ne "پورت: "; read -r port
+      2) echo -ne "Port: "; read -r port
          [[ -z "$port" ]] && continue
          iptables -C INPUT -p tcp --dport "$port" -j ACCEPT 2>/dev/null || iptables -A INPUT -p tcp --dport "$port" -j ACCEPT
-         echo -e "${OK}پورت $port باز شد"
+         echo -e "${OK}Port $port opened"
          netfilter-persistent save 2>/dev/null
          echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
-      3) echo -ne "پورت: "; read -r port
+      3) echo -ne "Port: "; read -r port
          [[ -z "$port" ]] && continue
-         iptables -D INPUT -p tcp --dport "$port" -j ACCEPT 2>/dev/null && echo -e "${OK}پورت $port بسته شد"
+         iptables -D INPUT -p tcp --dport "$port" -j ACCEPT 2>/dev/null && echo -e "${OK}Port $port closed"
          netfilter-persistent save 2>/dev/null
          echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       4) ss -tlnp | grep -E ':(443|80|8443|8444) '
@@ -571,15 +571,15 @@ config_manager() {
   while true; do
     clear
     echo -e "${CYAN}══════════════════════════${NC}"
-    echo -e "${CYAN}   ⚙️ مدیریت کانفیگ${NC}"
+    echo -e "${CYAN}   ⚙️ Config Manager${NC}"
     echo -e "${CYAN}══════════════════════════${NC}"
-    echo "1. نمایش کانفیگ‌ها"
-    echo "2. ساخت ساب جدید"
-    echo "3. چرخاندن Short IDs"
-    echo "4. UUID و Public Key"
-    echo "5. QR کانفیگ اول"
-    echo "0. برگشت"
-    echo -ne "${BOLD}انتخاب: ${NC}"
+    echo "1. Show current configs"
+    echo "2. Rebuild subscription"
+    echo "3. Rotate Short IDs"
+    echo "4. Show UUID & Public Key"
+    echo "5. QR for first config"
+    echo "0. Back"
+    echo -ne "${BOLD}Choice: ${NC}"
     read -r opt
     case $opt in
       1) show_info; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
@@ -681,27 +681,27 @@ bot_menu() {
   while true; do
     clear
     echo -e "${CYAN}══════════════════════════${NC}"
-    echo -e "${CYAN}   🤖 مدیریت ربات${NC}"
+    echo -e "${CYAN}   🤖 Bot Manager${NC}"
     echo -e "${CYAN}══════════════════════════${NC}"
-    local s="غیرفعال ❌"
-    systemctl is-active realityghost-bot &>/dev/null && s="فعال ✅"
-    echo -e "وضعیت: $s"
-    [[ -f /etc/realityghost/bot_config.json ]] && jq -r '.token // ""' /etc/realityghost/bot_config.json | grep -q . && echo -e "توکن: ${s}"
-    echo "1. ری‌استارت ربات"
-    echo "2. توکن جدید"
-    echo "3. کاربران"
-    echo "4. افزودن کاربر"
-    echo "5. حذف کاربر"
-    echo "6. آمار"
-    echo "0. برگشت"
-    echo -ne "${BOLD}انتخاب: ${NC}"; read -r opt
+    local s="Disabled ❌"
+    systemctl is-active realityghost-bot &>/dev/null && s="Active ✅"
+    echo -e "Status: $s"
+    [[ -f /etc/realityghost/bot_config.json ]] && jq -r '.token // ""' /etc/realityghost/bot_config.json | grep -q . && echo -e "Token: ${s}"
+    echo "1. Restart Bot"
+    echo "2. Set New Token"
+    echo "3. List Users"
+    echo "4. Add User"
+    echo "5. Delete User"
+    echo "6. Stats"
+    echo "0. Back"
+    echo -ne "${BOLD}Choice: ${NC}"; read -r opt
     case $opt in
-      1) systemctl restart realityghost-bot; echo -e "${OK}ربات ری‌استارت شد${NC}"; sleep 2 ;;
-      2) echo -ne "توکن: "; read -r tk
+      1) systemctl restart realityghost-bot; echo -e "${OK}Bot restarted${NC}"; sleep 2 ;;
+      2) echo -ne "Token: "; read -r tk
          [[ -n "$tk" ]] && jq --arg t "$tk" '.token = $t | .enabled = true' /etc/realityghost/bot_config.json > /tmp/botcfg.json && mv /tmp/botcfg.json /etc/realityghost/bot_config.json
          systemctl restart realityghost-bot; sleep 2 ;;
       3) /usr/local/bin/rg-bot.py list 2>&1; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
-      4) echo -ne "نام: "; read -r n; echo -ne "حجم MB (0=∞): "; read -r l; echo -ne "روز (0=∞): "; read -r d
+      4) echo -ne "Name: "; read -r n; echo -ne "Traffic MB (0=∞): "; read -r l; echo -ne "Days (0=∞): "; read -r d
          /usr/local/bin/rg-bot.py adduser "$n" "${l:-0}" "${d:-0}"; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       5) echo -ne "آیدی: "; read -r id
          /usr/local/bin/rg-bot.py deluser "$id" 2>&1 || echo "❌"
@@ -733,7 +733,7 @@ uninstall() {
 
 main_install() {
   echo ""
-  figlet -f banner "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
+  figlet -f bigmono12 "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
   echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
   echo -e "${PURPLE}   Xray VLESS+Reality Installer & Manager${NC}"
   echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
@@ -771,23 +771,23 @@ main_install() {
 manage_menu() {
   while true; do
     clear
-    figlet -f banner "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
+    figlet -f bigmono12 "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
     echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
     echo -e "${PURPLE}   ${FLAG_RAW} ${LOC} • ${DOMAIN}${NC}"
     echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
     [[ -f "$CONFIG_DIR/config.json" ]] && DOMAIN=$(jq -r '.inbounds[0].settings.clients[0].email' "$CONFIG_DIR/config.json" 2>/dev/null | sed 's/user@//')
     [[ -z "$DOMAIN" || "$DOMAIN" == "null" ]] && DOMAIN="your-domain.com"
-    echo "1. 📋 اطلاعات اتصال"
-    echo "2. ⚙️ مدیریت کانفیگ"
-    echo "3. 🔌 مدیریت پورت‌ها"
-    echo "4. 🔄 چرخش Short IDs"
-    echo "5. 🏗️ بازسازی ساب و پنل"
-    echo "6. 🔄 ری‌استارت"
-    echo "7. 🤖 ربات"
-    echo "8. 🔄 بروزرسانی"
-    echo "9. 🗑️ حذف کامل"
-    echo "0. خروج"
-    echo -ne "${BOLD}انتخاب: ${NC}"; read -r opt
+    echo "1. 📋 Connection Info"
+    echo "2. ⚙️ Config Manager"
+    echo "3. 🔌 Port Manager"
+    echo "4. 🔄 Rotate Short IDs"
+    echo "5. 🏗️ Rebuild Sub & Panel"
+    echo "6. 🔄 Restart Services"
+    echo "7. 🤖 Bot"
+    echo "8. 🔄 Update"
+    echo "9. 🗑️ Uninstall"
+    echo "0. Exit"
+    echo -ne "${BOLD}Choice: ${NC}"; read -r opt
     case $opt in
       1) show_info; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       2) config_manager ;;
@@ -812,16 +812,16 @@ case "${1:-}" in
   uninstall) check_root; uninstall ;;
   *)
     echo ""
-    figlet -f banner "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
+    figlet -f bigmono12 "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
     echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
     echo -e "${PURPLE}   Xray VLESS+Reality Installer & Manager${NC}"
     echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
     echo ""
-    echo -e "  ${GREEN}install${NC}     — نصب کامل"
-    echo -e "  ${GREEN}manage${NC}      — منوی مدیریت"
-    echo -e "  ${GREEN}manual-rotate${NC}— چرخش Short IDs"
-    echo -e "  ${GREEN}pull${NC}         — بروزرسانی"
-    echo -e "  ${GREEN}uninstall${NC}   — حذف کامل"
+    echo -e "  ${GREEN}install${NC}     — Install Xray Reality on your server"
+    echo -e "  ${GREEN}manage${NC}      — Management menu"
+    echo -e "  ${GREEN}manual-rotate${NC}— Rotate Short IDs manually"
+    echo -e "  ${GREEN}pull${NC}         — Update from GitHub"
+    echo -e "  ${GREEN}uninstall${NC}   — Remove everything"
     echo ""
     ;;
 esac
