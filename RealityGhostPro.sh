@@ -364,151 +364,113 @@ build_panel() {
   done
   mkdir -p "$STATUS_DIR"
   cat > "$STATUS_DIR/index.html" <<HTMLEOF
-<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>RealityGhost PRO · Dashboard</title>
+<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>RG PRO · Dashboard</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 :root{--b:#14141f;--s:#1a1a2e;--s2:#22223a;--br:rgba(130,140,255,0.07);--t:#d0d0e8;--t2:#7878a8;--p:#7c5cfc;--p2:#9775ff;--g:#00d68f;--y:#f0a030;--r:#f05060;--bl:#4a9eff;--rad:14px;--rs:9px}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',system-ui,sans-serif;background:var(--b);color:var(--t);background-image:radial-gradient(ellipse at 20% 20%,rgba(124,92,252,0.03) 0%,transparent 60%)}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--b);color:var(--t)}
 .w{max-width:1440px;margin:0 auto;padding:14px}
-/* HEADER */
 .hd{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 16px;background:var(--s);border:1px solid var(--br);border-radius:var(--rad);margin-bottom:14px}
-.hd-l{display:flex;align-items:center;gap:10px}.hd-l h1{font-size:10px;font-weight:800}.hd-l span{color:var(--p2)}
+.hd-l{display:flex;align-items:center;gap:10px}.hd-l h1{font-size:15px;font-weight:800}.hd-l span{color:var(--p2)}
 .hd-l small{font-size:10px;background:rgba(124,92,252,0.1);padding:2px 6px;border-radius:100px;color:var(--p2)}
 .hd-r{display:flex;align-items:center;gap:6px}
 .stt{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:100px;font-size:10px;font-weight:600;background:rgba(0,214,143,0.08);color:var(--g);border:1px solid rgba(0,214,143,0.12)}
 .stt.r{background:rgba(240,80,96,0.08);color:var(--r);border-color:rgba(240,80,96,0.12)}
 .dot{width:4px;height:4px;border-radius:50%;background:var(--g);animation:pl 1.8s infinite}.dot.r{background:var(--r)}
 @keyframes pl{0%,100%{opacity:1}50%{opacity:0.2}}
-/* RESPONSIVE GRID — auto-fit */
 .g{display:grid;gap:10px;margin-bottom:12px}
-.gx{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
-.g2{grid-template-columns:2fr 1fr}
+.gx{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.g2{grid-template-columns:1.5fr 1fr}
 .g3{grid-template-columns:1fr 1fr 1fr}
-.g4{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
-/* CARDS */
-.cd{background:var(--s);border:1px solid var(--br);border-radius:var(--rad);padding:12px 14px}
-.cd-l{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:3px}
-.cd-v{font-size:20px;font-weight:800;letter-spacing:-.3px;display:flex;align-items:baseline;gap:3px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.cd{background:var(--s);border:1px solid var(--br);border-radius:var(--rad);padding:10px 12px}
+.cd-l{font-size:9px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:2px}
+.cd-v{font-size:18px;font-weight:800;letter-spacing:-.3px;display:flex;align-items:baseline;gap:3px}
 .cd-v small{font-size:10px;font-weight:500;color:var(--t2)}
-.cd-v.xs{font-size:17px}
-/* SECTIONS */
-.sec{background:var(--s);border:1px solid var(--br);border-radius:var(--rad);padding:16px;height:100%}
-.sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(130,140,255,0.04)}
-.sec-h h2{font-size:10px;font-weight:700;display:flex;align-items:center;gap:5px}
-/* BARS */
+.cd-v.xs{font-size:13px}
+.sec{background:var(--s);border:1px solid var(--br);border-radius:var(--rad);padding:14px;height:100%}
+.sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(130,140,255,0.04)}
+.sec-h h2{font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px}
 .bc{height:4px;border-radius:100px;background:rgba(255,255,255,0.04);overflow:hidden;margin-top:4px}
 .bf{height:100%;border-radius:100px;transition:width 1s}
-.p{background:linear-gradient(90deg,#5a3fd4,#7c5cfc)}.gr{background:linear-gradient(90deg,#00b87a,#00d68f)}.yl{background:linear-gradient(90deg,#d49020,#f0a030)}.or{background:linear-gradient(90deg,#e07020,#ff8c42)}.bl{background:linear-gradient(90deg,#3a7bd5,#4a9eff)}
-/* RESOURCES */
-.rs{display:flex;flex-direction:column;gap:10px}
-.ri{}.rl{display:flex;justify-content:space-between;font-size:10px;color:var(--t2);margin-bottom:2px}.rl b{color:var(--t);font-weight:600}
-/* TRAFFIC — card style like load */
-.tg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.ti{text-align:center;padding:10px;border-radius:var(--rs);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
-.ti-v{font-size:15px;font-weight:700;direction:ltr}.ti-l{font-size:10px;color:var(--t2);margin-top:1px}
-/* SERVICES */
+.p{background:linear-gradient(90deg,#5a3fd4,#7c5cfc)}.gr{background:linear-gradient(90deg,#00b87a,#00d68f)}.yl{background:linear-gradient(90deg,#d49020,#f0a030)}.or{background:linear-gradient(90deg,#e07020,#ff8c42)}
+.rs{display:flex;flex-direction:column;gap:8px}
+.rl{display:flex;justify-content:space-between;font-size:10px;color:var(--t2);margin-bottom:2px}.rl b{color:var(--t);font-weight:600}
+.tg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ti{text-align:center;padding:8px;border-radius:var(--rs);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
+.ti-v{font-size:14px;font-weight:700;direction:ltr}.ti-l{font-size:9px;color:var(--t2);margin-top:1px}
 .sv{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.svc{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:var(--rs);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);font-size:10px;font-weight:600}
+.svc{display:flex;align-items:center;gap:5px;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,0.02);font-size:10px;font-weight:600;border:1px solid rgba(255,255,255,0.05)}
 .svc.o{color:var(--g);border-color:rgba(0,214,143,0.12)}.svc.x{color:var(--t2)}
-/* CONFIGS — compact */
 .cl{display:grid;grid-template-columns:1fr 1fr;gap:4px}
-.ci{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:all .12s}
+.ci{display:flex;align-items:center;gap:5px;padding:5px 7px;border-radius:5px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:all .1s}
 .ci:hover{background:rgba(124,92,252,0.06);border-color:rgba(124,92,252,0.12)}
 .ci-l{flex:1;min-width:0}.ci-l strong{display:block;font-size:9px;font-weight:600}
-.ci-s{font-size:7px;color:var(--p2);direction:ltr;font-family:monospace;margin-top:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ci-b{font-size:7px;padding:2px 5px;border-radius:3px;background:rgba(255,255,255,0.05);border:none;cursor:pointer;color:var(--t2);white-space:nowrap}
-/* LOAD */
-.lg{display:flex;gap:6px}
-.lgi{flex:1;text-align:center;padding:10px;border-radius:var(--rs);background:rgba(255,255,255,0.02)}
-.lgi-v{font-size:10px;font-weight:700}.lgi-l{font-size:10px;color:var(--t2);margin-top:1px}
-/* CHIPS */
-.ch{display:flex;gap:7px;flex-wrap:wrap}
-.chp{padding:4px 8px;border-radius:100px;font-size:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);cursor:pointer}
+.ci-s{font-size:7px;color:var(--p2);direction:ltr;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ci-b{font-size:6px;padding:2px 4px;border-radius:3px;background:rgba(255,255,255,0.05);border:none;cursor:pointer;color:var(--t2)}
+.lg{display:flex;gap:5px}
+.lgi{flex:1;text-align:center;padding:8px;border-radius:var(--rs);background:rgba(255,255,255,0.02)}
+.lgi-v{font-size:14px;font-weight:700}.lgi-l{font-size:9px;color:var(--t2);margin-top:1px}
+.ch{display:flex;gap:5px;flex-wrap:wrap}
+.chp{padding:4px 8px;border-radius:100px;font-size:9px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);cursor:pointer}
 .chp:hover{background:rgba(124,92,252,0.08);border-color:rgba(124,92,252,0.15)}
-/* INFO ROWS */
-.ir{display:flex;flex-direction:column;gap:8px}
-.irow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:10px}
+.ir{display:flex;flex-direction:column;gap:6px}
+.irow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:10px}
 .irow:not(:last-child){border-bottom:1px solid rgba(130,140,255,0.03)}
-.irow-l{color:var(--t2)}.irow-v{font-weight:500;direction:ltr;font-size:10px;max-width:60%;text-align:left;word-break:break-all}
-/* QUICK ACTIONS */
-.qa{display:flex;gap:10px;flex-wrap:wrap}
-.qab{padding:5px 10px;border-radius:var(--rs);font-size:10px;font-weight:600;border:1px solid rgba(124,92,252,0.15);background:rgba(124,92,252,0.06);color:var(--p2);cursor:pointer}
-.qab:hover{background:rgba(124,92,252,0.12)}
-/* FOOTER */
-.ft{padding:16px;text-align:center;font-size:10px;color:var(--t2);border-top:1px solid rgba(255,255,255,0.02);margin-top:16px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.irow-l{color:var(--t2)}.irow-v{font-weight:500;direction:ltr;font-size:10px;text-align:left;word-break:break-all}
+.qa{display:flex;gap:6px;flex-wrap:wrap}
+.qab{padding:5px 10px;border-radius:var(--rs);font-size:9px;font-weight:600;border:1px solid rgba(124,92,252,0.15);background:rgba(124,92,252,0.06);color:var(--p2);cursor:pointer}
+.ft{padding:14px;text-align:center;font-size:9px;color:var(--t2);border-top:1px solid rgba(255,255,255,0.02);margin-top:14px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
 .ft a{color:var(--p2);text-decoration:none}
-/* TOAST */
-.ts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:rgba(26,26,46,0.96);border:1px solid rgba(0,214,143,0.2);border-radius:var(--rs);padding:8px 16px;font-size:10px;color:var(--g);opacity:0;transition:all .3s;z-index:999;backdrop-filter:blur(12px)}
+.ts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:rgba(26,26,46,0.96);border:1px solid rgba(0,214,143,0.2);border-radius:var(--rs);padding:8px 16px;font-size:10px;color:var(--g);opacity:0;transition:all .3s;z-index:999}
 .ts.s{opacity:1;transform:translateX(-50%) translateY(0)}
-/* RESPONSIVE */
 @media(max-width:1024px){.g2{grid-template-columns:1fr}.g3{grid-template-columns:1fr 1fr}}
 @media(max-width:700px){.g3{grid-template-columns:1fr}.gx{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:450px){.gx{grid-template-columns:1fr}.w{padding:6px}body{font-size:14px}}
+@media(max-width:450px){.gx{grid-template-columns:1fr}.w{padding:8px}}
 </style></head><body>
 <div class=w>
-<div class=hd><div class=hd-l><h1>👻 RealityGhost <span>PRO</span><small>v6.0</small></h1></div><div class=hd-r><span class=stt id=stb><span class=dot id=std></span><span id=stl>Online</span></span></div></div>
+<div class=hd><div class=hd-l><h1>👻 RG <span>PRO</span></h1></div><div class=hd-r><span class=stt id=stb><span class=dot id=std></span><span id=stl>Online</span></span></div></div>
 
 <div class="g gx" id=rw1></div>
 
 <div class="g g3">
 <div class=sec><div class=sec-h><h2>🖥 System</h2><span id=upt style=font-size:10px;color:var(--t2)>—</span></div>
-<div class=rs>
-<div class=ri><div class=rl><span>RAM</span><span id=rp>—</span></div><div class=bc><div class="bf p" id=rf style=width:0%></div></div></div>
-<div class=ri><div class=rl><span>CPU</span><span id=cp>—</span></div><div class=bc><div class="bf gr" id=cf style=width:0%></div></div></div>
-<div class=ri><div class=rl><span>Disk</span><span id=dp>—</span></div><div class=bc><div class="bf yl" id=df style=width:0%></div></div></div>
-<div class=ri><div class=rl><span>SWAP</span><span id=sp>—</span></div><div class=bc><div class="bf or" id=_sf style=width:0%></div></div></div>
-</div></div>
+<div class=rs id=sys_rs></div></div>
 
 <div class=sec><div class=sec-h><h2>📊 Traffic</h2></div>
 <div class=tg><div><div class=ti-v id=td>—</div><div class=ti-l>Today</div></div><div><div class=ti-v id=mo>—</div><div class=ti-l>Month</div></div><div><div class=ti-v id=tot>—</div><div class=ti-l>Total</div></div></div>
-<div class=sec-h style=margin:14px 0 8px><h2>🌐 Load</h2></div>
+<div class=sec-h style=margin:12px 0 6px><h2>🌐 Load</h2></div>
 <div class=lg><div class=lgi><div class=lgi-v id=l1>—</div><div class=lgi-l>1m</div></div><div class=lgi><div class=lgi-v id=l5>—</div><div class=lgi-l>5m</div></div><div class=lgi><div class=lgi-v id=l15>—</div><div class=lgi-l>15m</div></div></div>
 </div>
 
 <div class=sec><div class=sec-h><h2>📡 Server</h2></div>
-<div class=ir>
-<div class=irow><span class=irow-l>🌐 IP</span><span class=irow-v style=color:var(--p2) id=sip>—</span></div>
-<div class=irow><span class=irow-l>🧠 OS</span><span class=irow-v id=sos>Linux</span></div>
-<div class=irow><span class=irow-l>⚡ CPU</span><span class=irow-v id=scpu>—</span></div>
-<div class=irow><span class=irow-l>⏱ Uptime</span><span class=irow-v style=color:var(--g) id=sut>—</span></div>
-<div class=irow><span class=irow-l>🚀 Xray</span><span class=irow-v style=color:var(--p2) id=sxr>—</span></div>
-<div class=irow><span class=irow-l>🕐 Updated</span><span class=irow-v id=s_upd>—</span></div>
-</div></div>
+<div class=ir id=srv_ir></div></div>
 </div>
 
 <div class="g g2">
-<div><div class=sec style=margin-bottom:12px><div class=sec-h><h2>🔗 Configs</h2><button class=ci-b onclick=cpA() style=padding:3px8px>📋 All</button></div>
+<div><div class=sec style=margin-bottom:10px><div class=sec-h><h2>🔗 Configs</h2><button class=ci-b onclick=cpA() style=padding:2px6px>📋 All</button></div>
 <div class=cl id=cf></div></div>
-<div class=sec><div class=sec-h><h2>📄 Subscription</h2></div>
-<div style=display:flex;gap:5px><input readonly id=su value="—" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:7px 8px;color:var(--t2);font-size:10px;direction:ltr;font-family:monospace" onclick=this.select()><button class=ci-b onclick="navigator.clipboard.writeText(document.getElementById('su').value);to('✓ Copied')">Copy</button></div>
+<div class=sec><div class=sec-h><h2>📄 Sub</h2></div>
+<div style=display:flex;gap:4px><input readonly id=su value="—" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:5px;padding:6px 8px;color:var(--t2);font-size:9px;direction:ltr;font-family:monospace" onclick=this.select()><button class=ci-b onclick="navigator.clipboard.writeText(document.getElementById('su').value);to('✓ Copied')">Copy</button></div>
 </div></div>
 
-<div class=sec><div class=sec-h><h2>🔧 Services</h2><span style=font-size:10px;color:var(--t2) id=svc></span></div>
+<div class=sec><div class=sec-h><h2>🔧 Services</h2><span style=font-size:9px;color:var(--t2) id=svc></span></div>
 <div class=sv id=sv></div>
-<div class=sec-h style=margin:14px 0 8px><h2>⚡ Actions</h2></div>
+<div class=sec-h style=margin:12px 0 6px><h2>⚡ Actions</h2></div>
 <div class=qa><span class=qab onclick=cpA()>📋 Copy All</span><span class=qab onclick=window.open('https://'+D+'/sub')>📥 Sub</span><span class=qab onclick=window.location.reload()>🔄 Refresh</span></div>
-</div></div>
-
-<div class="g g4">
-<div class=sec><div class=sec-h><h2>🏷️ Quick Links</h2></div>
-<div class=ch id=qa></div></div>
-<div class=sec><div class=sec-h><h2>💾 Storage</h2></div>
-<div class=ir>
-<div class=irow><span class=irow-l>Total</span><span class=irow-v id=_dkt>—</span></div>
-<div class=irow><span class=irow-l>Used</span><span class=irow-v id=_dku>—</span></div>
-<div class=irow><span class=irow-l>Free</span><span class=irow-v style=color:var(--g) id=_dka>—</span></div>
-</div></div>
-<div class=sec><div class=sec-h><h2>🌍 Network</h2></div>
-<div class=ir>
-<div class=irow><span class=irow-l>IPv4</span><span class=irow-v style=color:var(--p2) id=nip>—</span></div>
-<div class=irow><span class=irow-l>DNS</span><span class=irow-v id=dns>—</span></div>
-<div class=irow><span class=irow-l>TCP CC</span><span class=irow-v style=color:var(--g) id=tcpcc>BBR</span></div>
-<div class=irow><span class=irow-l>Interface</span><span class=irow-v id=iface>eth0</span></div>
-</div></div>
 </div>
 
-<footer class=ft><span>👻 RG PRO v6.0</span><span>🔗 <a href=https://github.com/sheshocked/RealityGhostPro target=_blank>GitHub</a></span><span>⚡ <span id=ftr>—</span></span></footer></div>
+<div class="g g4">
+<div class=sec><div class=sec-h><h2>🏷️ Links</h2></div>
+<div class=ch id=qa></div></div>
+<div class=sec><div class=sec-h><h2>💾 Storage</h2></div>
+<div class=ir id=sto_ir></div></div>
+<div class=sec><div class=sec-h><h2>🌍 Network</h2></div>
+<div class=ir id=net_ir></div></div>
+</div>
+
+<footer class=ft><span>👻 RG PRO</span><span>🔗 <a href=https://github.com/sheshocked/RealityGhostPro target=_blank>GitHub</a></span><span>⚡ <span id=ftr>—</span></span></footer></div>
 <div class=ts id=t></div>
 
 <script>
@@ -518,23 +480,24 @@ function lk(c){return 'vless://'+U+'@'+D+':443?encryption=none&flow=xtls-rprx-vi
 function to(m){var t=document.getElementById('t');t.textContent=m;t.classList.add('s');setTimeout(function(){t.classList.remove('s')},1400)}
 function cp(s){var c=CS.find(function(x){return x.s===s});if(!c)return;navigator.clipboard.writeText(lk(c)).then(function(){to('✓ '+c.l)})||to('👆 Manual')}
 function cpA(){var a=CS.map(function(x){return lk(x)}).join('\n')+'\nhttps://'+D+'/sub';navigator.clipboard.writeText(a).then(function(){to('✓ All copied')})||to('👆 Manual')}
-function bd(){var h=document.getElementById('cf');h.innerHTML='';CS.forEach(function(c){var e=document.createElement('div');e.className='ci';e.onclick=function(){cp(c.s)};e.innerHTML='<div class=ci-l><strong>'+c.e+' '+c.l+'</strong><span class=ci-s>'+c.s+'</span></div><button class=ci-b onclick="event.stopPropagation();cp(\''+c.s+'\')">📋 Copy</button>';h.appendChild(e)});var q=document.getElementById('qa');q.innerHTML='';CS.forEach(function(c){var e=document.createElement('span');e.className='chp';e.textContent=c.e+' '+c.l;e.onclick=function(){cp(c.s)};q.appendChild(e)});document.getElementById('su').value='https://'+D+'/sub'}
+function bd(){var h=document.getElementById('cf');h.innerHTML='';CS.forEach(function(c){var e=document.createElement('div');e.className='ci';e.onclick=function(){cp(c.s)};e.innerHTML='<div class=ci-l><strong>'+c.e+' '+c.l+'</strong><span class=ci-s>'+c.s+'</span></div><button class=ci-b onclick="event.stopPropagation();cp(\''+c.s+'\')">Copy</button>';h.appendChild(e)});var q=document.getElementById('qa');q.innerHTML='';CS.forEach(function(c){var e=document.createElement('span');e.className='chp';e.textContent=c.e+' '+c.l;e.onclick=function(){cp(c.s)};q.appendChild(e)});document.getElementById('su').value='https://'+D+'/sub'}
 function fmt(b){if(!b||b==0)return'0 B';var u=['B','KB','MB','GB','TB'];var i=0;var n=Number(b);while(n>=1024&&i<u.length-1){n/=1024;i++}return n.toFixed(i==0?0:1)+' '+u[i]}
 function fd(){var x=new XMLHttpRequest();x.open('GET','/status/stats.json?t='+Date.now(),true);x.timeout=5000;x.onload=function(){if(x.status!==200)return;try{var d=JSON.parse(x.responseText);
 var r1=document.getElementById('rw1');r1.innerHTML='<div class=cd><div class=cd-l>🧠 RAM</div><div class=cd-v>'+d.ram.used+'<small>/'+d.ram.total+'MB</small></div></div><div class=cd><div class=cd-l>⚡ CPU</div><div class=cd-v>'+d.cpu+'<small>%</small></div></div><div class=cd><div class=cd-l>💾 Disk</div><div class=cd-v>'+d.disk.used+'<small>/'+d.disk.total+'</small></div></div><div class=cd><div class=cd-l>🔗 Connections</div><div class=cd-v>'+(d.connections||0)+'</div></div><div class=cd><div class=cd-l>🌐 Load 1m</div><div class=cd-v class=xs>'+d.load['1m']+'</div></div><div class=cd><div class=cd-l>🚀 Xray</div><div class=cd-v class=xs>'+d.xray_version+'</div></div>';
-document.getElementById('upt').textContent='⏱ '+d.uptime;document.getElementById('rp').textContent=d.ram.usage.toFixed(0)+'%';document.getElementById('rf').style.width=Math.min(d.ram.usage,100)+'%';document.getElementById('cp').textContent=d.cpu+'%';document.getElementById('cf').style.width=Math.min(parseFloat(d.cpu)||0,100)+'%';document.getElementById('dp').textContent=d.disk.usage+'%';document.getElementById('df').style.width=Math.min(parseInt(d.disk.usage)||0,100)+'%';document.getElementById('sp').textContent='0%';document.getElementById('_sf').style.width='0%';
+document.getElementById('upt').textContent='⏱ '+d.uptime;
+document.getElementById('sys_rs').innerHTML='<div class=ri><div class=rl><span>RAM</span><span id=rp>—</span></div><div class=bc><div class="bf p" id=rf style=width:0%></div></div></div><div class=ri><div class=rl><span>CPU</span><span id=cp>—</span></div><div class=bc><div class="bf gr" id=cf style=width:0%></div></div></div><div class=ri><div class=rl><span>Disk</span><span id=dp>—</span></div><div class=bc><div class="bf yl" id=df style=width:0%></div></div></div><div class=ri><div class=rl><span>SWAP</span><span id=sp>—</span></div><div class=bc><div class="bf or" id=_sf style=width:0%></div></div></div>';
+document.getElementById('rp').textContent=d.ram.usage.toFixed(0)+'%';document.getElementById('rf').style.width=Math.min(d.ram.usage,100)+'%';document.getElementById('cp').textContent=d.cpu+'%';document.getElementById('cf').style.width=Math.min(parseFloat(d.cpu)||0,100)+'%';document.getElementById('dp').textContent=d.disk.usage+'%';document.getElementById('df').style.width=Math.min(parseInt(d.disk.usage)||0,100)+'%';document.getElementById('sp').textContent='0%';document.getElementById('_sf').style.width='0%';
 document.getElementById('td').textContent=fmt(d.traffic.today);document.getElementById('mo').textContent=fmt(d.traffic.month);document.getElementById('tot').textContent=fmt(d.traffic.total);
 document.getElementById('l1').textContent=d.load['1m'];document.getElementById('l5').textContent=d.load['5m'];document.getElementById('l15').textContent=d.load['15m'];
-document.getElementById('sut').textContent=d.uptime;document.getElementById('sxr').textContent=d.xray_version;
-document.getElementById('_dkt').textContent=d.disk.total;document.getElementById('_dku').textContent=d.disk.used;document.getElementById('_dka').textContent=d.disk.avail;
+document.getElementById('srv_ir').innerHTML='<div class=irow><span class=irow-l>🌐 IP</span><span class=irow-v style=color:var(--p2) id=sip>—</span></div><div class=irow><span class=irow-l>🧠 OS</span><span class=irow-v id=sos>Linux</span></div><div class=irow><span class=irow-l>⚡ CPU</span><span class=irow-v id=scpu>—</span></div><div class=irow><span class=irow-l>⏱ Uptime</span><span class=irow-v style=color:var(--g) id=sut>—</span></div><div class=irow><span class=irow-l>🚀 Xray</span><span class=irow-v style=color:var(--p2) id=sxr>—</span></div><div class=irow><span class=irow-l>🕐 Updated</span><span class=irow-v id=s_upd>—</span></div>';
+document.getElementById('sut').textContent=d.uptime;document.getElementById('sxr').textContent=d.xray_version;document.getElementById('sip').textContent='${SERVER_IP}';document.getElementById('scpu').textContent='3 Cores';document.getElementById('sos').textContent='Ubuntu 24.04';
+document.getElementById('s_upd').textContent=d.timestamp.slice(11,16)+' UTC';
 var sv=document.getElementById('sv');s=d.services;sv.innerHTML='<div class="svc '+(s.nginx==='active'?'o':'x')+'">🌐 NGINX</div><div class="svc '+(s.xray==='active'?'o':'x')+'">🚀 Xray</div><div class="svc '+(s.monitor==='active'?'o':'x')+'">📡 Monitor</div><div class="svc '+(d.dns_ok?'o':'x')+'">🔒 SSL</div>';
 var ct=Object.values(s).filter(function(v){return v==='active'}).length;document.getElementById('svc').textContent=ct+'/3';
-var a=ct===3&&d.dns_ok;document.getElementById('stl').textContent=a?'All Systems Online':'⚠ Issues';document.getElementById('stb').className='stt'+(a?'':' r');document.getElementById('std').className='dot'+(a?'':' r');
-document.getElementById('s_upd').textContent=d.timestamp.slice(11,16)+' UTC';
-// Network fields
-document.getElementById('nip').textContent='${SERVER_IP}';document.getElementById('dns').textContent='9.9.9.9, 9.9.9.12, 149.112.112.112';
-document.getElementById('sip').textContent='${SERVER_IP}';document.getElementById('scpu').textContent='3 Cores';
-document.getElementById('tcpcc').textContent='BBR';document.getElementById('iface').textContent='eth0';document.getElementById('sos').textContent='Ubuntu 24.04';
+var a=ct===3&&d.dns_ok;document.getElementById('stl').textContent=a?'Online':'⚠ Issues';document.getElementById('stb').className='stt'+(a?'':' r');document.getElementById('std').className='dot'+(a?'':' r');
+document.getElementById('sto_ir').innerHTML='<div class=irow><span class=irow-l>Total</span><span class=irow-v id=_dkt style=color:var(--g)>—</span></div><div class=irow><span class=irow-l>Used</span><span class=irow-v id=_dku>—</span></div><div class=irow><span class=irow-l>Free</span><span class=irow-v style=color:var(--g) id=_dka>—</span></div>';
+document.getElementById('_dkt').textContent=d.disk.total;document.getElementById('_dku').textContent=d.disk.used;document.getElementById('_dka').textContent=d.disk.avail;
+document.getElementById('net_ir').innerHTML='<div class=irow><span class=irow-l>IPv4</span><span class=irow-v style=color:var(--p2)>${SERVER_IP}</span></div><div class=irow><span class=irow-l>DNS</span><span class=irow-v>9.9.9.9, 9.9.9.12</span></div><div class=irow><span class=irow-l>TCP CC</span><span class=irow-v style=color:var(--g)>BBR</span></div><div class=irow><span class=irow-l>Interface</span><span class=irow-v>eth0</span></div>';
 document.getElementById('ftr').textContent='Updated '+d.timestamp.slice(11,16)+' UTC'}catch(e){}};x.send()}
 bd();fd();setInterval(fd,5000);
 </script></body></html>
