@@ -794,7 +794,11 @@ manage_menu() {
     echo "6. 🔄 Restart Services"
     echo "7. 🤖 Bot"
     echo "8. 🔄 Update"
-    echo "9. 🗑️ Uninstall"
+    echo "9. 💾 Backup"
+    echo "10. 🏥 Health"
+    echo "11. ⚡ Speed Test"
+    echo "12. 🔧 Auto Heal"
+    echo "13. 🗑️ Uninstall"
     echo "0. Exit"
     echo -ne "${BOLD}Choice: ${NC}"; read -r opt
     case $opt in
@@ -802,13 +806,17 @@ manage_menu() {
       2) config_manager ;;
       3) port_manager ;;
       4) manual_rotate; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
-      5) build_subscription; build_panel; echo -e "${OK}بازسازی شد${NC}"; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
-      6) systemctl restart nginx xray realityghost-monitor; echo -e "${OK}ری‌استارت شد${NC}"; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
+      5) build_subscription; build_panel; echo -e "${OK}Rebuilt${NC}"; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
+      6) systemctl restart nginx xray realityghost-monitor; echo -e "${OK}Restarted${NC}"; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       7) bot_menu ;;
       8) pull_update; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
-      9) uninstall; break ;;
+      9) auto_backup; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
+      10) health_check; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
+      11) speed_test; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
+      12) auto_heal; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
+      13) uninstall; break ;;
       0) exit 0 ;;
-      *) echo -e "${WARN}نامعتبر${NC}"; sleep 1 ;;
+      *) echo -e "${WARN}Invalid${NC}"; sleep 1 ;;
     esac
   done
 }
@@ -818,6 +826,98 @@ if [[ "${0##*/}" == "p" || "${1:-}" == "p" ]]; then
   manage_menu
   exit 0
 fi
+
+# ██████╗ ██████╗ ███████╗███╗   ███╗██╗██╗   ██╗███╗   ███╗
+# ██╔══██╗██╔══██╗██╔════╝████╗ ████║██║██║   ██║████╗ ████║
+# ██████╔╝██████╔╝█████╗  ██╔████╔██║██║██║   ██║██╔████╔██║
+# ██╔═══╝ ██╔══██╗██╔══╝  ██║╚██╔╝██║██║██║   ██║██║╚██╔╝██║
+# ██║     ██║  ██║███████╗██║ ╚═╝ ██║██║╚██████╔╝██║ ╚═╝ ██║
+# ╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝╚═╝ ╚═════╝ ╚═╝     ╚═╝
+# Premium features
+
+auto_backup() {
+  local bak_dir="/var/backups/realityghost"
+  mkdir -p "$bak_dir"
+  local ts=$(date +%Y%m%d_%H%M%S)
+  cp "$CONFIG_DIR/config.json" "$bak_dir/config_$ts.json" 2>/dev/null
+  cp /etc/nginx/nginx.conf "$bak_dir/nginx_$ts.conf" 2>/dev/null
+  # Keep only last 10 backups
+  ls -t "$bak_dir"/*.json 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null
+  echo -e "${OK}Backup saved: $bak_dir/config_$ts.json${NC}"
+}
+
+health_check() {
+  echo -e "${INFO}Health check...${NC}"
+  local issues=0
+  for svc in nginx xray realityghost-monitor; do
+    if systemctl is-active --quiet "$svc"; then
+      echo -e "  ${GREEN}✓${NC} $svc"
+    else
+      echo -e "  ${RED}✗${NC} $svc"
+      issues=$((issues+1))
+    fi
+  done
+  # Check panel
+  if curl -sk --max-time 3 "https://127.0.0.1:8443/status/" > /dev/null 2>&1; then
+    echo -e "  ${GREEN}✓${NC} Panel (8443)"
+  else
+    echo -e "  ${RED}✗${NC} Panel (8443)"
+    issues=$((issues+1))
+  fi
+  # Check 443
+  if timeout 3 openssl s_client -connect 127.0.0.1:443 -servername www.gstatic.com -quiet 2>&1 | grep -q "depth=2"; then
+    echo -e "  ${GREEN}✓${NC} Xray (443)"
+  else
+    echo -e "  ${RED}✗${NC} Xray (443)"
+    issues=$((issues+1))
+  fi
+  # Check DNS
+  if cat /etc/resolv.conf | grep -q "nameserver"; then
+    echo -e "  ${GREEN}✓${NC} DNS"
+  else
+    echo -e "  ${RED}✗${NC} DNS"
+    issues=$((issues+1))
+  fi
+  echo -e "${INFO}Issues: ${issues}${NC}"
+  [[ $issues -eq 0 ]] && echo -e "${GREEN}All systems healthy!${NC}"
+  return $issues
+}
+
+speed_test() {
+  echo -e "${INFO}Speed test (5s sample)...${NC}"
+  # Use iperf3 if available, else simple download test
+  if command -v iperf3 &>/dev/null; then
+    iperf3 -c iperf.he.net -t 5 2>&1 | grep -E "sender|receiver" | tail -1
+  else
+    # Test download speed
+    local start=$(date +%s%N)
+    curl -sk --max-time 5 -o /dev/null -w "%{speed_download}" "https://realityghost.ir/1mb.bin" 2>/dev/null ||     curl -sk --max-time 5 -o /dev/null -w "%{speed_download}" "https://speedtest.tele2.net/1MB.zip" 2>/dev/null ||     echo "N/A"
+    local end=$(date +%s%N)
+    local bytes=1048576
+    local elapsed=$(( (end-start)/1000000 ))
+    [[ $elapsed -gt 0 ]] && echo -e "${OK}Speed: $((bytes/elapsed)) KB/s${NC}" || echo -e "${WARN}Speed test failed${NC}"
+  fi
+}
+
+auto_heal() {
+  local fixed=0
+  for svc in nginx xray; do
+    if ! systemctl is-active --quiet "$svc"; then
+      echo -e "${WARN}$svc is down! Restarting...${NC}"
+      systemctl restart "$svc"
+      fixed=$((fixed+1))
+    fi
+  done
+  # Check port 443
+  if ! ss -tlnp | grep -q ':443 '; then
+    echo -e "${WARN}Port 443 is down! Restarting services...${NC}"
+    systemctl restart nginx xray
+    fixed=$((fixed+1))
+  fi
+  [[ $fixed -gt 0 ]] && echo -e "${OK}Auto-healed $fixed issue(s)${NC}"
+  return $fixed
+}
+
 
 case "${1:-}" in
   install) DOMAIN="$2"; EMAIL="$3"; main_install ;;
