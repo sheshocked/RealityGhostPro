@@ -471,6 +471,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--b);color:var(--t)
 <div class=sv id=sv></div>
 <div class=sec-h style=margin:14px 0 8px><h2>⚡ Actions</h2></div>
 <div class=qa><span class=qab onclick=cpA()>📋 Copy All</span><span class=qab onclick=window.open('https://'+D+'/sub')>📥 Sub</span><span class=qab onclick=window.location.reload()>🔄 Refresh</span></div>
+<div class=sec-h style=margin:14px 0 8px><h2>📄 Subscription</h2></div>
+<div style=display:flex;gap:5px><input readonly id=su value="—" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:7px 8px;color:var(--t2);font-size:9px;direction:ltr;font-family:monospace" onclick=this.select()><button class=ci-b onclick="navigator.clipboard.writeText(document.getElementById('su').value);to('✓ Copied')">Copy</button></div>
 </div>
 
 <div class=sec><div class=sec-h><h2>🔗 Configs</h2><button class=ci-b onclick=cpA() style=padding:3px8px>📋 All</button></div>
@@ -479,10 +481,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--b);color:var(--t)
 
 <div class="g g4">
 <div class=sec><div class=sec-h><h2>🏷️ Quick Links</h2></div>
-<div class=ch id=qa></div>
-<div class=sec-h style=margin:12px 0 8px><h2>📄 Subscription</h2></div>
-<div style=display:flex;gap:5px><input readonly id=su value="—" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:7px 8px;color:var(--t2);font-size:9px;direction:ltr;font-family:monospace" onclick=this.select()><button class=ci-b onclick="navigator.clipboard.writeText(document.getElementById('su').value);to('✓ Copied')" style=padding:4px8px>Copy</button></div>
-</div>
+<div class=ch id=qa></div></div>
 <div class=sec><div class=sec-h><h2>💾 Storage</h2></div>
 <div class=ir>
 <div class=irow><span class=irow-l>Total</span><span class=irow-v id=_dkt>—</span></div>
