@@ -94,7 +94,7 @@ install_dependencies() {
   echo -e "${INFO}نصب پیش‌نیازها..."
   apt-get update -y
   apt-get install -y wget curl unzip uuid-runtime jq qrencode certbot \
-    nginx-extras logrotate bc netcat-openbsd dnsutils python3 python3-pip sqlite3
+    nginx-extras logrotate bc netcat-openbsd dnsutils python3 python3-pip sqlite3 figlet
   pip3 install python-telegram-bot requests --break-system-packages -q 2>/dev/null || \
     echo -e "${WARN}نصب پکیج‌های ربات ناموفق"
   echo -e "${OK}پیش‌نیازها نصب شدن"
@@ -732,9 +732,11 @@ uninstall() {
 # ─── Main ────────────────────────────────────────────────────────────
 
 main_install() {
-  echo -e "${PURPLE}╔════════════════════════════════╗${NC}"
-  echo -e "${PURPLE}║   RealityGhost PRO v4.2${NC}            ${PURPLE}║${NC}"
-  echo -e "${PURPLE}╚════════════════════════════════╝${NC}"
+  echo ""
+  figlet -f banner "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
+  echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
+  echo -e "${PURPLE}   Xray VLESS+Reality Installer & Manager${NC}"
+  echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
   check_root
   detect_location
   echo -e "${INFO}${FLAG_RAW} ${LOC}${NC}"
@@ -769,10 +771,10 @@ main_install() {
 manage_menu() {
   while true; do
     clear
-    echo -e "${PURPLE}══════════════════════════════════════${NC}"
-    echo -e "${PURPLE}   ${FLAG_RAW} RealityGhost PRO — ${LOC}${NC}"
-    echo -e "${PURPLE}   ${DOMAIN}${NC}"
-    echo -e "${PURPLE}══════════════════════════════════════${NC}"
+    figlet -f banner "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
+    echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
+    echo -e "${PURPLE}   ${FLAG_RAW} ${LOC} • ${DOMAIN}${NC}"
+    echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
     [[ -f "$CONFIG_DIR/config.json" ]] && DOMAIN=$(jq -r '.inbounds[0].settings.clients[0].email' "$CONFIG_DIR/config.json" 2>/dev/null | sed 's/user@//')
     [[ -z "$DOMAIN" || "$DOMAIN" == "null" ]] && DOMAIN="your-domain.com"
     echo "1. 📋 اطلاعات اتصال"
@@ -809,8 +811,12 @@ case "${1:-}" in
   pull) check_root; pull_update ;;
   uninstall) check_root; uninstall ;;
   *)
-    echo -e "\nRealityGhost PRO v4.2"
-    echo -e "Xray VLESS+Reality Installer & Manager\n"
+    echo ""
+    figlet -f banner "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
+    echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
+    echo -e "${PURPLE}   Xray VLESS+Reality Installer & Manager${NC}"
+    echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
+    echo ""
     echo -e "  ${GREEN}install${NC}     — نصب کامل"
     echo -e "  ${GREEN}manage${NC}      — منوی مدیریت"
     echo -e "  ${GREEN}manual-rotate${NC}— چرخش Short IDs"
