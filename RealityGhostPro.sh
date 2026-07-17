@@ -204,6 +204,14 @@ install_certbot() {
     echo -e "${OK}SSL already exists"
     return 0
   fi
+  echo -e "${INFO}Verifying DNS points to this server..."
+  SERVER_IP=$(curl -4 -s --max-time 5 https://api.ipify.org 2>/dev/null)
+  DOMAIN_IP=$(dig +short "${DOMAIN}" 2>/dev/null | tail -1)
+  if [[ "$SERVER_IP" != "$DOMAIN_IP" ]]; then
+    echo -e "${YELLOW}DNS mismatch: domain→$DOMAIN_IP, server→$SERVER_IP${NC}"
+    echo -e "${YELLOW}Waiting 30s for DNS propagation...${NC}"
+    sleep 30
+  fi
   echo -e "${INFO}Getting SSL from Let's Encrypt..."
   systemctl stop nginx 2>/dev/null
   certbot certonly --standalone --non-interactive --agree-tos -d "${DOMAIN}" -m "${EMAIL}" 2>/dev/null
@@ -833,7 +841,7 @@ main_install() {
   build_panel
   install_monitor
   setup_rotation
-  for p in 443 80; do
+  for p in 443 80 8443; do
     iptables -C INPUT -p tcp --dport "$p" -j ACCEPT 2>/dev/null || iptables -A INPUT -p tcp --dport "$p" -j ACCEPT
   done
   netfilter-persistent save 2>/dev/null
