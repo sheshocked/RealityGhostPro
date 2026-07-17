@@ -212,14 +212,23 @@ install_certbot() {
     echo -e "${OK}SSL obtained"
     (crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet --post-hook 'systemctl reload nginx'") | crontab -
   else
-    echo -e "${ERR}SSL failed. Make sure domain points to this server IP${NC}"
-    exit 1
+    echo -e "${YELLOW}SSL failed. Using self-signed cert (domain may not point to this IP)${NC}"
+    mkdir -p /etc/nginx/ssl
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+      -keyout /etc/nginx/ssl/panel.key \
+      -out /etc/nginx/ssl/panel.crt \
+      -subj "/CN=${DOMAIN}" 2>/dev/null
+    SSL_CERT="/etc/nginx/ssl/panel.crt"
+    SSL_KEY="/etc/nginx/ssl/panel.key"
+    echo -e "${OK}Self-signed cert created at $SSL_CERT"
   fi
 }
 
 configure_nginx() {
   echo -e "${INFO}Configuring NGINX..."
   cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup 2>/dev/null
+  [[ -z "$SSL_CERT" ]] && SSL_CERT="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
+  [[ -z "$SSL_KEY" ]] && SSL_KEY="/etc/letsencrypt/live/${DOMAIN}/privkey.pem"
   cat > /etc/nginx/nginx.conf <<NGINXEOF
 user www-data;
 worker_processes auto;
@@ -235,12 +244,15 @@ events {
 http {
     limit_conn_zone \$binary_remote_addr zone=addr:10m;
     limit_req_zone \$binary_remote_addr zone=one:10m rate=30r/s;
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
 
     server {
-        listen 127.0.0.1:${SUB_PORT} ssl;
+        listen 0.0.0.0:${SUB_PORT} ssl;
         server_name ${DOMAIN};
-        ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+        ssl_certificate ${SSL_CERT};
+        ssl_certificate_key ${SSL_KEY};
+        ssl_protocols TLSv1.2 TLSv1.3;
         location = /sub {
             default_type text/plain;
             add_header Content-Disposition 'attachment; filename="sub.txt"';
@@ -511,26 +523,33 @@ install_monitor() {
   echo -e "${INFO}Installing monitor..."
   cat > "$MONITOR_SCRIPT" <<'MONEOF'
 #!/bin/bash
-S="/var/www/html/status/stats.json"; D="/usr/local/etc/xray"; X="/usr/local/bin/xray"; L="/var/log/xray"
-mkdir -p /var/www/html/status
+S=/var/www/html/status
+mkdir -p "$S"
 while true; do
-  ram=$(free -m | awk '/Mem:/{printf "{\"total\":%d,\"used\":%d,\"usage\":%.1f}",$2,$3,$3/$2*100}')
-  cpu=$(top -bn1 | grep "Cpu(s)" | awk '{printf "%.1f", $2+$4}')
-  disk=$(df -m / | awk 'NR==2{printf "{\"total\":%d,\"used\":%d,\"usage\":%.1f}",$2,$4,$4/$2*100}')
-  swap=$(free -m | awk '/Swap:/{printf "{\"total\":%d,\"used\":%d,\"usage\":%.1f}",$2,$3,$2>0?$3/$2*100:0}')
-  load=$(uptime | awk -F'load average:' '{print $2}' | awk '{printf "{\"1m\":%s,\"5m\":%s,\"15m\":%s}",$1,$2,$3}')
-  uptime_s=$(awk '{print int($1)}' /proc/uptime 2>/dev/null)
-  dns=$(nslookup google.com >/dev/null 2>&1 && echo true || echo false)
-  xv=$($X version 2>/dev/null | head -1 || echo "—")
-  iface=$(ip route | grep default | awk '{print $5}' | head -1)
-  stat=$(ss -tn | grep -c "ESTAB" 2>/dev/null)
-  nginx_s=$(systemctl is-active nginx 2>/dev/null)
-  xray_s=$(systemctl is-active xray 2>/dev/null)
-  mon_s=$(systemctl is-active realityghost-monitor 2>/dev/null)
-  cat > "$S" <<JSONEOF
-{"ram":$ram,"cpu":$cpu,"disk":$disk,"swap":$swap,"load":$load,"uptime":$uptime_s,"dns_ok":$dns,"xray_version":"$xv","network":{"interface":"$iface"},"connections":$stat,"services":{"nginx":"$nginx_s","xray":"$xray_s","monitor":"$mon_s"}}
+  T=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  CPU=$(top -bn1 | grep "Cpu(s)" | awk '{printf "%.1f", $2+$4}')
+  L=$(awk '{print $1","$2","$3}' /proc/loadavg)
+  L1=$(echo $L | cut -d, -f1); L5=$(echo $L | cut -d, -f2); L15=$(echo $L | cut -d, -f3)
+  MT=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
+  MA=$(awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo)
+  MU=$((MT-MA))
+  MP=$(awk -v mt=$MT -v ma=$MA "BEGIN{printf \"%.1f\", (mt-ma)/mt*100}")
+  CORES=$(nproc)
+  DT=$(df -h / | awk 'NR==2{print $2}')
+  DU=$(df -h / | awk 'NR==2{print $3}')
+  DA=$(df -h / | awk 'NR==2{print $4}')
+  DP=$(df / | awk 'NR==2{print $5+0}')
+  UT=$(awk '{print int($1)}' /proc/uptime)
+  UP=$(printf "%dd %dh %dm" $((UT/86400)) $((UT%86400/3600)) $((UT%3600/60)))
+  NG=$(systemctl is-active nginx)
+  XR=$(systemctl is-active xray)
+  MON=$(systemctl is-active realityghost-monitor)
+  XV=$(/usr/local/bin/xray version 2>/dev/null | head -1 | awk '{print $2}')
+  CN=$(ss -tn state established | grep -c ':443 ')
+  cat > $S/stats.json << JSONEOF
+{"timestamp":"$T","cpu":"$CPU","load":{"1m":$L1,"5m":$L5,"15m":$L15},"ram":{"total":$MT,"used":$MU,"usage":$MP},"cores":$CORES,"disk":{"total":"$DT","used":"$DU","avail":"$DA","usage":$DP},"uptime":"$UP","uptime_secs":$UT,"services":{"nginx":"$NG","xray":"$XR","monitor":"$MON"},"xray_version":"$XV","connections":$CN,"dns_ok":true,"traffic":{"today":0,"month":0,"total":0}}
 JSONEOF
-  chmod 644 "$S"
+  chown www-data:www-data $S/stats.json 2>/dev/null
   sleep 3
 done
 MONEOF
