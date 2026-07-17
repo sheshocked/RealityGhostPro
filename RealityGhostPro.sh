@@ -27,12 +27,9 @@ SNI_LIST=(
 )
 
 detect_location() {
-  local ip=""
-  ip=$(curl -4 -s --max-time 3 https://ifconfig.me 2>/dev/null)
-  [[ -z "$ip" ]] && ip=$(curl -4 -s --max-time 3 https://api.ipify.org 2>/dev/null)
-  [[ -z "$ip" ]] && ip=$(hostname -I | awk '{print $1}')
-  local data=$(curl -4 -s --max-time 3 "http://ip-api.com/json/${ip}" 2>/dev/null)
+  local data=$(curl -4 -s --max-time 4 "http://ip-api.com/json/" 2>/dev/null)
   local country=$(echo "$data" | jq -r '.countryCode // "US"' 2>/dev/null)
+  local ip=$(echo "$data" | jq -r '.query // ""' 2>/dev/null)
   [[ -z "$country" || "$country" == "null" ]] && country="US"
   case "$country" in
     IR) FLAG="%F0%9F%87%AE%F0%9F%87%B7"; FLAG_RAW="🇮🇷"; LOC="Iran" ;;
@@ -733,15 +730,15 @@ uninstall() {
 
 main_install() {
   echo ""
-  echo -e "${PURPLE}       ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
-  echo -e "${PURPLE}      ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
-  echo -e "${PURPLE}      ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
-  echo -e "${PURPLE}      ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
-  echo -e "${PURPLE}      ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
-  echo -e "${PURPLE}       ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
-  echo -e "${PURPLE}╔══════════════════════════════════════════════════════╗${NC}"
-  echo -e "${PURPLE}║   Xray VLESS+Reality Installer & Manager            ║${NC}"
-  echo -e "${PURPLE}╚══════════════════════════════════════════════════════╝${NC}"
+  echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
+  echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
+  echo -e "${PURPLE}  ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
+  echo -e "${PURPLE}  ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
+  echo -e "${PURPLE}  ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
+  echo -e "${PURPLE}   ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
+  echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
+  echo -e "${PURPLE}  Xray VLESS+Reality Installer & Manager${NC}"
+  echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
   check_root
   detect_location
   echo -e "${INFO}${FLAG_RAW} ${LOC}${NC}"
@@ -776,15 +773,15 @@ main_install() {
 manage_menu() {
   while true; do
     clear
-    echo -e "${PURPLE}       ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
-    echo -e "${PURPLE}      ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
-    echo -e "${PURPLE}      ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
-    echo -e "${PURPLE}      ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
-    echo -e "${PURPLE}      ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
-    echo -e "${PURPLE}       ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
-    echo -e "${PURPLE}╔══════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║   ${FLAG_RAW} ${LOC} • ${DOMAIN}                              ║${NC}"
-    echo -e "${PURPLE}╚══════════════════════════════════════════════════════╝${NC}"
+    echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
+    echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
+    echo -e "${PURPLE}  ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
+    echo -e "${PURPLE}  ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
+    echo -e "${PURPLE}  ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
+    echo -e "${PURPLE}   ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
+    echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
+    echo -e "${PURPLE}  ${FLAG_RAW} ${LOC} • ${DOMAIN}${NC}"
+    echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
     [[ -f "$CONFIG_DIR/config.json" ]] && DOMAIN=$(jq -r '.inbounds[0].settings.clients[0].email' "$CONFIG_DIR/config.json" 2>/dev/null | sed 's/user@//')
     [[ -z "$DOMAIN" || "$DOMAIN" == "null" ]] && DOMAIN="your-domain.com"
     echo "1. 📋 Connection Info"
@@ -822,15 +819,15 @@ case "${1:-}" in
   uninstall) check_root; uninstall ;;
   *)
     echo ""
-    echo -e "${PURPLE}       ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
-    echo -e "${PURPLE}      ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
-    echo -e "${PURPLE}      ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
-    echo -e "${PURPLE}      ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
-    echo -e "${PURPLE}      ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
-    echo -e "${PURPLE}       ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
-    echo -e "${PURPLE}╔══════════════════════════════════════════════════════╗${NC}"
-    echo -e "${PURPLE}║   Xray VLESS+Reality Installer & Manager            ║${NC}"
-    echo -e "${PURPLE}╚══════════════════════════════════════════════════════╝${NC}"
+    echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
+    echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
+    echo -e "${PURPLE}  ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
+    echo -e "${PURPLE}  ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
+    echo -e "${PURPLE}  ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
+    echo -e "${PURPLE}   ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
+    echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
+    echo -e "${PURPLE}  Xray VLESS+Reality Installer & Manager${NC}"
+    echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
     echo ""
     echo -e "  ${GREEN}install${NC}     — Install Xray Reality on your server"
     echo -e "  ${GREEN}manage${NC}      — Management menu"
