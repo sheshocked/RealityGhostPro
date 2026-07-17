@@ -30,16 +30,16 @@ detect_location() {
   local data country ip
   # Try multiple geolocation APIs with fallback
   data=$(curl -4 -s --max-time 3 "https://ipapi.co/json/" 2>/dev/null)
-  country=$(echo "$data" | jq -r '.country_code_iso3 // .country_code // "US"' 2>/dev/null)
+  country=$(echo "$data" | jq -r '.country_code // ""' 2>/dev/null)
   ip=$(echo "$data" | jq -r '.ip // ""' 2>/dev/null)
-  if [[ -z "$country" || "$country" == "null" || ${#country} -gt 2 ]]; then
+  if [[ -z "$country" || "$country" == "null" || ${#country} -gt 3 ]]; then
     data=$(curl -4 -s --max-time 3 "http://ip-api.com/json/" 2>/dev/null)
-    country=$(echo "$data" | jq -r '.countryCode // "US"' 2>/dev/null)
+    country=$(echo "$data" | jq -r '.countryCode // ""' 2>/dev/null)
     ip=$(echo "$data" | jq -r '.query // ""' 2>/dev/null)
   fi
   if [[ -z "$country" || "$country" == "null" ]]; then
     data=$(curl -4 -s --max-time 3 "https://ipinfo.io/json" 2>/dev/null)
-    country=$(echo "$data" | jq -r '.country // "US"' 2>/dev/null)
+    country=$(echo "$data" | jq -r '.country // ""' 2>/dev/null)
     ip=$(echo "$data" | jq -r '.ip // ""' 2>/dev/null)
   fi
   [[ -z "$country" || "$country" == "null" ]] && country="US"
