@@ -206,11 +206,22 @@ install_certbot() {
   fi
   echo -e "${INFO}Verifying DNS points to this server..."
   SERVER_IP=$(curl -4 -s --max-time 5 https://api.ipify.org 2>/dev/null)
-  DOMAIN_IP=$(dig +short "${DOMAIN}" 2>/dev/null | tail -1)
+  # Wait up to 5 min for DNS to propagate correctly
+  local waited=0
+  while [[ $waited -lt 300 ]]; do
+    DOMAIN_IP=$(dig +short "${DOMAIN}" 2>/dev/null | tail -1)
+    if [[ "$SERVER_IP" == "$DOMAIN_IP" ]]; then
+      echo -e "${OK}DNS OK: ${DOMAIN} → ${SERVER_IP}"
+      break
+    fi
+    echo -e "${YELLOW}Waiting for DNS... (${waited}s) domain→${DOMAIN_IP:-none}, server→${SERVER_IP}${NC}"
+    sleep 15
+    waited=$((waited+15))
+  done
   if [[ "$SERVER_IP" != "$DOMAIN_IP" ]]; then
-    echo -e "${YELLOW}DNS mismatch: domain→$DOMAIN_IP, server→$SERVER_IP${NC}"
-    echo -e "${YELLOW}Waiting 30s for DNS propagation...${NC}"
-    sleep 30
+    echo -e "${ERR}DNS still not pointing to this server after 5 min.${NC}"
+    echo -e "${ERR}Set your DNS A record: ${DOMAIN} → ${SERVER_IP}${NC}"
+    echo -e "${ERR}Then run: bash RealityGhostPro.sh renew-ssl${NC}"
   fi
   echo -e "${INFO}Getting SSL from Let's Encrypt..."
   systemctl stop nginx 2>/dev/null
@@ -817,6 +828,21 @@ uninstall() {
   echo -e "${OK}Uninstall complete"
 }
 
+renew_ssl() {
+  echo -e "${INFO}Renewing SSL certificate..."
+  if [[ -z "$DOMAIN" ]]; then
+    echo -ne "${BOLD}Domain: ${NC}"; read -r DOMAIN
+  fi
+  systemctl stop nginx 2>/dev/null
+  certbot certonly --standalone --non-interactive --agree-tos -d "${DOMAIN}" -m "${EMAIL:-info@kir.com}" 2>/dev/null
+  systemctl start nginx 2>/dev/null
+  if [[ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]]; then
+    echo -e "${OK}SSL renewed for ${DOMAIN}"
+  else
+    echo -e "${ERR}SSL renewal failed. Check DNS: ${DOMAIN} must point to this server.${NC}"
+  fi
+}
+
 # ─── Main ────────────────────────────────────────────────────────────
 
 main_install() {
@@ -1029,6 +1055,7 @@ auto_heal() {
 
 case "${1:-}" in
   install) DOMAIN="$2"; EMAIL="$3"; main_install ;;
+  renew-ssl) check_root; renew_ssl ;;
   manage) check_root; detect_location; manage_menu ;;
   manual-rotate) check_root; manual_rotate ;;
   pull) check_root; pull_update ;;
