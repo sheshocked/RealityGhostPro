@@ -1,63 +1,183 @@
-# RealityGhost PRO
+# 🚀 RealityGhost PRO v4.2
 
-اسکریپت production-grade و stealth-محور برای راه‌اندازی و مدیریت **Xray VLESS+Reality** با دو مسیر همزمان (TCP و XHTTP)، صفحه‌ی ساب‌اسکریپشن HTTPS واقعی، و rotation دوره‌ی امن — بدون نیاز به CDN.
+![Version](https://img.shields.io/badge/version-4.0-purple?style=flat-square)
+![Xray](https://img.shields.io/badge/Xray-25.9.11-blue?style=flat-square)
+![SSL](https://img.shields.io/badge/SSL-Let's%20Encrypt-green?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-orange?style=flat-square)
 
-این پروژه یه **fork اصلاح‌شده** از [ghostmcf/RealityGhost](https://github.com/ghostmcf/RealityGhost) است. نسخه‌ی اصلی چند باگ معماری جدی داشت که باعث می‌شد کانفیگ‌ها زود لو برن یا اصلاً درست بالا نیان؛ همه‌شون اینجا ریشه‌ای رفع شدن (توضیح کامل هرکدوم پایین همین فایل و در `CHANGELOG.md`).
+**یک ابزار حرفه‌ای و کامل برای نصب و مدیریت Xray VLESS+Reality روی سرورهای اوبونتو/دبیان**
 
-## نصب
+با پنل مدیریت فارسی، تشخیص خودکار لوکیشن سرور، ساب‌اسکریپشن، و مانیتورینگ پیشرفته.
+
+---
+
+## ✨ ویژگی‌ها
+
+| ویژگی | توضیحات |
+|-------|---------|
+| ⚡ **VLESS+Reality** | پروتکل فوق سریع Xray با TLS 1.3 REALITY |
+| 🎯 **۶ SNI گوگل** | هر کانفیگ SNI + ShortId مخصوص خودش |
+| 🌍 **تشخیص لوکیشن** | پرچم کشور و نام لوکیشن به صورت خودکار بر اساس IP سرور |
+| 📊 **پنل وضعیت فارسی** | RTL، دیتای زنده، کارت‌های کپی با پرچم و نام لوکیشن |
+| 📦 **ساب‌اسکریپشن** | فرمت VlESS کامل با `allowinsecure=0` و `echfq=none` و `headerType=none` |
+| 🔐 **SSL خودکار** | Let's Encrypt با تمدید خودکار |
+| 🛡️ **فایروال هوشمند** | باز کردن خودکار پورت‌ها، مدیریت در منو |
+| 🔄 **چرخش Short IDs** | هر ۳ روز یکبار تغییر خودکار |
+| 📉 **مانیتورینگ** | CPU، RAM، Disk، ترافیک، Connections، Load |
+| 🗑️ **حذف کامل** | uninstall یکپارچه |
+
+---
+
+## 🖼️ پیش‌نمایش
+
+```
+🌐 دامنه: lat.b5a.ir        📊 پنل: https://lat.b5a.ir/status/
+📍 لوکیشن: 🇱🇻 Latvia        📥 ساب: https://lat.b5a.ir/sub
+═══════════════════════════════
+🇱🇻 ✅ Google Static      → www.gstatic.com       sid: 53bad86c..
+🇱🇻 ✌ Google AJAX         → ajax.googleapis.com   sid: 80c987f7..
+🇱🇻 💠 Google Storage      → storage.googleapis.com sid: 9602acc1..
+🇱🇻 💏 Google Fonts        → fonts.gstatic.com     sid: 2a93f3fe..
+🇱🇻 📌 Google Fonts API    → fonts.googleapis.com  sid: 9cbcb163..
+🇱🇻 🌐 Google              → www.google.com        sid: 8bdbfbf9..
+═══════════════════════════════
+```
+
+---
+
+## 📥 نصب
+
+### پیش‌نیازها:
+- **یک دامنه** با Record A به IP سرور
+- **پورت‌های ۸۰ و ۴۴۳** باز روی سرور
+- اوبونتو ۲۰.۰۴+ یا دبیان ۱۱+
+
+### روش نصب (۲ دقیقه):
 
 ```bash
-cd && sudo git clone https://github.com/sheshocked/RealityGhostPro.git && cd RealityGhostPro && sudo chmod +x RealityGhostPro.sh && sudo ./RealityGhostPro.sh install
+# دانلود
+git clone https://github.com/YOUR_USER/RealityGhostPro.git
+cd RealityGhostPro
+chmod +x RealityGhostPro.sh
+
+# نصب (دامنه و ایمیل رو می‌پرسه)
+sudo bash RealityGhostPro.sh install
 ```
 
-پیش‌نیاز: یه دامنه که رکورد A ش مستقیم (بدون CDN، ابر خاکستری/DNS-only) به IP سرورت اشاره کنه.
+یا با متغیر محیطی (غیرتعاملی):
+```bash
+sudo DOMAIN="lat.b5a.ir" EMAIL="info@kir.com" bash RealityGhostPro.sh install
+```
 
-نصب می‌تونه interactive باشه (ازت domain و email می‌پرسه) یا کاملاً خودکار:
+### بعد از نصب:
+```
+📊 پنل وضعیت:  https://lat.b5a.ir/status/
+📥 ساب:        https://lat.b5a.ir/sub
+```
+
+---
+
+## 🎮 مدیریت
 
 ```bash
-DOMAIN=sub.example.com EMAIL=you@example.com sudo -E ./RealityGhostPro.sh install
+sudo bash RealityGhostPro.sh manage
 ```
 
-## مدیریت
-
-```bash
-sudo ./RealityGhostPro.sh manage
+منوی مدیریت شامل:
+```
+1. 📋 نمایش اطلاعات اتصال
+2. ⚙️ مدیریت کانفیگ‌ها
+3. 🔌 مدیریت پورت‌ها (فایروال)
+4. 🔄 چرخاندن Short IDs
+5. 🏗️ بازسازی ساب‌اسکریپشن
+6. 🔄 ری‌استارت سرویس‌ها
+7. 🗑️ حذف کامل
+0. خروج
 ```
 
-منوی مدیریت شامل: نمایش ساب‌اسکریپشن/QR، rotate امن/سخت، تعویض IP، تعویض UUID، سوییچ ترنسپورت پیش‌فرض، health check و آنینستال.
+---
 
-## معماری (چرا دیگه به CDN نیاز نداری و چرا پورت ۴۴۳ دیگه تداخل نداره)
+## 🔗 نمونه کانفیگ
 
 ```
-                         ┌────────────────────────────┐
- کلاینت (SNI = دامنه) ──▶│  nginx  :443  (stream/      │──▶ nginx :8443 (لوکال، TLS واقعی)
-                         │  ssl_preread — بدون          │      سرو می‌کنه فقط فایل ساب‌اسکریپشن
- کلاینت (SNI = کاموفلاژ)─▶│  ترمیناِیت‌کردن TLS)          │──▶ Xray reality-tcp :8444 (لوکال)
-                         └────────────────────────────┘      خودِ Xray هندشیک Reality رو انجام می‌ده
-
- کلاینت (XHTTP) ─────────────────────────────────────────▶ Xray reality-xhttp :2053 (پابلیک، مستقیم)
+vless://9aad75d6-126c-4702-8ca3-c14d3fa8eb2e@lat.b5a.ir:443
+  ?flow=xtls-rprx-vision
+  &encryption=none
+  &security=reality
+  &sni=ajax.googleapis.com
+  &fp=chrome
+  &echfq=none
+  &pbk=zsChSbmGHlNO0YRpvQIERelUFBHzm3SI2T9xw2J0F0Y
+  &sid=80c987f7e76803b9
+  &allowinsecure=0
+  &type=tcp
+  &headerType=none
+  #🇱🇻 ✌ Google AJAX
 ```
 
-نکته‌ی کلیدی: nginx هیچ‌وقت TLS مربوط به Reality رو ترمینیت نمی‌کنه (فقط SNI رو با `ssl_preread` می‌خونه و بایت خام رو پاس می‌ده)، پس هندشیک واقعی Reality همیشه دست خود Xray می‌مونه و کاموفلاژش دست‌نخورده باقی می‌مونه.
+---
 
-## چیزهایی که در نسخه‌ی اصلی خراب بود و اینجا درست شد
+## 🏗️ معماری
 
-| # | مشکل در نسخه‌ی اصلی | راه‌حل در این fork |
-|---|---|---|
-| 1 | **تصادم پورت ۴۴۳**: هم Xray (`0.0.0.0:443`) هم nginx (`listen 443 ssl`) هم‌زمان می‌خواستن همون پورت رو بگیرن؛ اسکریپت با `fuser -k 443/tcp` هرکدوم می‌رسید رو می‌کشت | nginx با `stream { ssl_preread on; }` روی ۴۴۳ فقط SNI رو می‌خونه و بدون ترمینیت، بایت خام رو به Xray یا به vhost لوکال ساب‌اسکریپشن پاس می‌ده |
-| 2 | XHTTP از پشت `proxy_pass` در لایه‌ی HTTP نginx رد می‌شد → یعنی nginx با گواهی Let's Encrypt واقعی TLS رو ترمینیت می‌کرد، که کاموفلاژ Reality رو کاملاً بی‌اثر می‌کرد | XHTTP-Reality الان مستقیم و بدون واسطه روی پورت اختصاصی (۲۰۵۳ پیش‌فرض) گوش می‌ده |
-| 3 | `certbot certonly --nginx` وقتی nginx دستی متوقف شده بود اجرا می‌شد (شکست می‌خورد)؛ fallback به webroot هم چون وب‌سرور روشن نبود بی‌فایده بود | چون طراحی جدید اصلاً پورت ۸۰ رو با nginx اشغال نمی‌کنه، `certbot certonly --standalone` همیشه بدون تداخل کار می‌کنه — even روی رینیو |
-| 4 | UUID پیش‌فرض هاردکد شده بود؛ اگه کاربر Enter می‌زد همون UUID مشترک همه فعال می‌شد | هر نصب همیشه یه UUID تصادفی تازه با `uuidgen` می‌سازه |
-| 5 | نسخه‌ی Xray هاردکد و قدیمی بود | آخرین ریلیز از GitHub API در لحظه‌ی نصب گرفته می‌شه (با fallback اگه API در دسترس نبود) |
-| 6 | فقط `google.com` به‌عنوان مقصد کاموفلاژ Reality استفاده می‌شد که رفتار edge گوگل بعضی‌وقتا با Reality سازگار نیست | لیست چند دامنه‌ی پرترافیک قبل نصب با `openssl s_client` تست می‌شن و اولین موردی که هندشیک TLS1.3 تمیز بده انتخاب می‌شه |
-| 7 | فایل‌های حساس (کلید خصوصی، config.json) به‌صورت پیش‌فرض قابل‌خوندن توسط بقیه بودن | `chmod 600/700` روی همه‌ی فایل‌ها و دایرکتوری‌های حساس |
-| 8 | لاگ Xray بدون rotate رشد نامحدود داشت | پالیسی logrotate هفتگی نصب می‌شه |
-| 9 | فقط interactive بود؛ اتوماسیون/CI سخت بود | متغیرهای محیطی `DOMAIN` / `EMAIL` / `XHTTP_PORT` نصب بی‌صدا رو ممکن می‌کنن |
+```
+┌─────────────┐     ┌───────────────────────────────────┐     ┌───────────┐
+│   Client    │────▶│  NGINX :443 (stream/ssl_preread)  │────▶│  Xray     │
+│  (VLESS)    │     │  ┌─ SNI=google.com ─▶ Xray TCP ┐  │     │  :8444    │
+│             │     │  └─ SNI=lat.b5a.ir ─▶ HTTP ────┘  │     │  Reality  │
+└─────────────┘     └───────────────────────────────────┘     └───────────┘
+```
 
-## چرا Rotation دوره‌ای لازمه
+---
 
-DPIهای پیشرفته اول IP یا دامنه رو هدف نمی‌گیرن؛ چیزی که واقعاً fingerprint می‌شه TLS fingerprint، shortId و پترن هندشیکه که اگه بیشتر از ~۷۲ ساعت ثابت بمونه، به‌مرور شناسایی می‌شه. یه cronjob پیش‌فرض هر ۳ روز یه‌بار (`0 5 */3 * * root realityghost manual-rotate`) fingerprint رو عوض و shortId جدید اضافه می‌کنه — بدون قطع کلاینت‌های فعال، چون کلید Reality و مسیر XHTTP دست نمی‌خورن مگر با `ROTATE_KEYS=1` / `ROTATE_PATH=1` صریحاً بخوای.
+## ⚙️ کانفیگ‌های داخلی
 
-## مجوز
+| مسیر | توضیحات |
+|------|---------|
+| `/usr/local/etc/xray/config.json` | کانفیگ اصلی Xray |
+| `/usr/local/etc/xray/client_info.txt` | اطلاعات اتصال |
+| `/etc/nginx/nginx.conf` | کانفیگ NGINX (stream + HTTP) |
+| `/var/www/html/status/index.html` | پنل وضعیت فارسی |
+| `/var/www/html/sub/sub.txt` | فایل ساب‌اسکریپشن (Base64) |
+| `/usr/local/bin/realityghost_monitor.sh` | اسکریپت مانیتورینگ |
+| `/var/log/xray/access.log` | لاگ دسترسی Xray |
+| `/var/log/xray/error.log` | لاگ خطاهای Xray |
 
-MIT — مثل ریپوی اصلی.
+---
+
+## 📋 تغییرات نسخه v4.0
+
+[مشاهده تغییرات کامل](CHANGELOG.md)
+
+- معماری بازنویسی شده: **حذف XHTTP**، فقط TCP Reality با ۶ SNI گوگل
+- **رفع باگ بزرگ**: حذف `proxy_protocol` از مسیر Xray (باعث اتصال TLS ناموفق می‌شد)
+- **تشخیص خودکار لوکیشن**: پرچم و نام کشور بر اساس IP سرور
+- **پنل جدید**: RTL فارسی، فونت وزیرمتن، تم بنفش تیره، دکمه کپی
+- **ساب جدید**: فرمت VlESS با `allowinsecure=0`، `echfq=none`، `headerType=none`
+- **مدیریت پورت**: باز/بستن پورت‌ها از منو
+- **پیش‌بررسی**: تشخیص پورت‌های اشغال شده و DNS
+- **لاگ کامل**: `access.log` و `error.log` برای Xray
+
+---
+
+## 🐛 رفع باگ‌های متداول
+
+### پورت ۴۴３ اشغاله؟
+اسکریپت هنگام نصب تشخیص میده و می‌پرسه خودکار آزادش کنه. یا بعداً با `manage → port manager` می‌تونی چک کنی.
+
+### کانفیگ‌ها کار نمی‌کنه؟
+چک کن `proxy_protocol` توی nginx نباشه (این باگ بزرگ بود). اسکریپت جدید بدون proxy_protocol می‌سازه.
+
+### ساب در v2rayNG/Happ نشون نمیده؟
+فرمت جدید با `allowinsecure=0` و `headerType=none` و `echfq=none` — همه کلاینت‌ها پشتیبانی می‌کنن.
+
+---
+
+## 📜 مجوز
+
+MIT License — آزاد برای استفاده و تغییر.
+
+---
+
+## 🌟 حمایت
+
+اگر پروژه رو مفید دیدی، ستاره ⭐ بده و با بقیه به اشتراک بذار!

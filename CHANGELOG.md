@@ -1,23 +1,116 @@
-# Changelog
+# 📋 CHANGELOG — RealityGhost PRO
 
-## v4.0.0 (this fork, "RealityGhost PRO")
+## v4.2 (2026-07-17) — 🆔 UUID + ShortId منحصربفرد + 🚀 بهینه‌سازی سیستم + 🤖 ربات
 
-Root-caused and fixed against the upstream `ghostmcf/RealityGhost` v3.6.1/3.7.0 source:
+### 🔥 بهینه‌سازی سیستم (جدید)
+- **BBR فعال‌سازی خودکار** اگه نباشه
+- **تنظیمات کرنل** شامل: TCP buffer (۱۶MB), FastOpen, MTU probing, backlog
+- **File descriptor limits** به ۱,۰۴۸,۵۷۶
+- **Systemd Xray limits** با CPU/Memory accounting
+- سرعت و پایداری اتصال به طور محسوس افزایش پیدا کرده
 
-- **fix:** eliminated the port-443 collision between Xray's TCP-Reality inbound and nginx's HTTPS vhost by moving to an nginx `stream` + `ssl_preread` SNI router. Xray no longer binds any public port directly for TCP-Reality; it listens on `127.0.0.1:8444` and receives passthrough traffic from nginx.
-- **fix:** XHTTP-Reality no longer terminates TLS at nginx (which was defeating Reality's camouflage). It now listens directly and publicly on its own port (`2053` by default, configurable via `XHTTP_PORT`).
-- **fix:** certificate issuance switched from `certbot certonly --nginx` (called while nginx was stopped — a guaranteed failure) and a webroot fallback (also called against a stopped webserver) to `certbot certonly --standalone`. Because nginx never binds port 80 in this design, standalone issuance and renewal never conflict.
-- **fix:** removed the hardcoded shared default UUID and dead "guest" UUID code path; every install now generates a fresh UUID with `uuidgen`.
-- **fix:** `fuser -k 443/tcp` "whatever's on the port dies" step removed — no longer needed since there's no collision to resolve.
-- **improvement:** Xray version is now resolved at install time from the GitHub Releases API instead of a hardcoded, aging version string, with an explicit pinned fallback if the API is unreachable.
-- **improvement:** Reality camouflage target (`dest`/`serverNames`) is chosen from a small curated list of high-traffic domains, live-tested with `openssl s_client -tls1_3` before install so a known-broken candidate is never selected silently.
-- **security:** `chmod 600/700` applied to `config.json`, the public key file, the UUID file, and their containing directories.
-- **improvement:** added `logrotate` policy for `/var/log/xray/err.log`.
-- **improvement:** non-interactive install support via `DOMAIN=`, `EMAIL=`, `XHTTP_PORT=` environment variables, for scripted/CI use.
-- **improvement:** added `realityghost health` subcommand and an in-menu health-check item that verifies Xray config validity, nginx config validity, and that both services are actually running — not just that files exist.
-- **improvement:** `set -Eeuo pipefail` + `trap ... ERR` for clearer failure messages during install.
-- **cleanup:** removed unused/dead code paths (commented-out guest subscription generation, stray debug comments).
+### 🤖 ربات تلگرام مدیریت کاربران (جدید — اختیاری)
+- **افزودن کاربر** با UUID جدید، محدودیت حجم و تاریخ انقضا
+- **حذف کاربر** به همراه حذف از Xray config
+- **فعال/غیرفعال کردن کاربر**
+- **لیست کاربران با حجم مصرفی**
+- **محدودیت حجم**: ست کردن limit بر حسب MB
+- **آمار سرور** (CPU, RAM, Disk, تعداد کاربران)
+- **دکمه‌های شیشه‌ای** برای عملیات سریع
+- نصب اختیاری حین نصب اصلی — سوال می‌کنه
+- Systemd service خودکار: `realityghost-bot.service`
+- دیتابیس SQLite: `/etc/realityghost/users.db`
 
-## Upstream (ghostmcf/RealityGhost v3.6.1 / "Just a Simple Private Script")
+### 🆔 UUID + ShortId منحصربفرد برای هر نصب
+- **UUID یکتا**: هر بار نصب یک UUID جدید و رندوم ساخته میشه
+- **۶ ShortId رندوم**: هر SNI یک ShortId ۱۶ بایتی رندوم می‌گیره
+- اعتبارسنجی جلوگیری از تکرار SID
 
-Base implementation: dual TCP/XHTTP Reality inbounds, safe fingerprint/shortId rotation via cron, base64 subscription file served through nginx. See project history at https://github.com/ghostmcf/RealityGhost for original commits. Upstream README notes the project had not yet reached what its author considered a production-ready state.
+## v4.0 (2026-07-17) — 🎉 بازنویسی کامل
+
+### 🔥 تغییرات بزرگ
+
+| تغییر | توضیحات |
+|-------|---------|
+| ❌ **حذف XHTTP** | اینباند XHTTP (پورت ۲۰۵۳) به طور کامل حذف شد. فقط TCP Reality |
+| 🎯 **۶ SNI گوگل** | هر کانفیگ SNI + ShortId اختصاصی: gstatic, ajax, storage, fonts, fonts.api, google.com |
+| 🐛 **رفع باگ پروکسی پروتکل** | حذف `proxy_protocol on` از مسیر Xray که باعث `TLSV1_ALERT_PROTOCOL_VERSION` می‌شد |
+| 🌍 **تشخیص لوکیشن** | IP سرور → تشخیص خودکار کشور → پرچم + اسم در پنل و لینک‌ها |
+| 📊 **پنل جدید RTL فارسی** | تم بنفش تیره، فونت وزیرمتن، دیتای زنده (CPU/RAM/Disk/Traffic/Load/DNS) |
+| 📥 **ساب‌اسکریپشن جدید** | فرمت VlESS کامل: `flow=xtls-rprx-vision`، `echfq=none`، `allowinsecure=0`، `headerType=none` |
+| 🔌 **مدیریت پورت در منو** | باز/بستن پورت‌های فایروال از داخل منوی مدیریت |
+| 🔄 **چرخش Short IDs** | هر ۳ روز یکبار چرخش خودکار، یا دستی از منو |
+| 🔧 **پیش‌بررسی قبل از نصب** | تشخیص پورت اشغال شده، DNS، اتصال اینترنت |
+
+### 🐛 رفع باگ‌ها
+
+- **بحرانی**: `proxy_protocol` به Xray فرستاده می‌شد → `TLSV1_ALERT_PROTOCOL_VERSION` → اتصال کار نمی‌کرد
+- **مهم**: نام کانفیگ‌ها با `RGPro-` شروع می‌شد → حالا با پرچم + ایموجی
+- **مهم**: پرچم کشور در ساب‌اسکریپشن توسط v2rayNG/Happ نشون داده نمی‌شد → پیشوند متنی
+- **متوسط**: لاگ Xray فقط warning بود → حالا info + access/error log جدا
+
+### ✨ اضافه‌شده‌ها
+
+- [x] تشخیص خودکار لوکیشن سرور (۲۰+ کشور)
+- [x] پنل مدیریت فارسی کامل (۶ بخش)
+- [x] ساب‌اسکریپشن با ۶ کانفیگ کامل
+- [x] مدیریت پورت‌ها (iptables) از منو
+- [x] QR Code برای کانفیگ اول
+- [x] نمایش UUID و Public Key
+- [x] بازسازی دستی ساب و پنل
+- [x] پیش‌بررسی سیستم قبل از نصب
+- [x] لاگ کامل Xray
+
+### 🏗️ معماری جدید
+
+```
+Client (SNI=google.com) 
+    → NGINX :443 (stream, ssl_preread, NO proxy_protocol) 
+    → Xray :8444 (Reality TCP, xtls-rprx-vision)
+```
+
+### 📁 فایل‌های تغییر یافته
+
+| فایل | تغییر |
+|------|-------|
+| `RealityGhostPro.sh` | +۴۵۰ خط، بازنویسی کامل |
+| `README.md` | +۲۰۰ خط، فارسی + کامل |
+| `CHANGELOG.md` | جدید |
+
+---
+
+## v3.2 (2026-07-15)
+
+### ✨ اضافه‌شده
+- پنل وضعیت اولیه با CPU/RAM/Disk
+- ساب‌اسکریپشن اولیه
+
+### 🐛 رفع باگ
+- رفع مشکل Systemd for Xray
+
+---
+
+## v3.0 (2026-07-10)
+
+### ✨ اضافه‌شده
+- معماری دو مسیره: TCP Reality + XHTTP
+- مدیریت منوی ساده
+- روتوش خودکار Short IDs
+
+---
+
+## v2.0 (2026-06-20)
+
+### ✨ اضافه‌شده
+- NGINX SNI passthrough
+- Let's Encrypt SSL
+- اسکریپت مانیتور ساده
+
+---
+
+## v1.0 (2026-06-01)
+
+### ✨ اولین انتشار
+- نصب Xray-core
+- کانفیگ پایه Reality
+- کانفیگ ساده nginx
