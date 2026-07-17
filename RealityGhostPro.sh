@@ -392,7 +392,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--b);color:var(--t)
 .rs{display:flex;flex-direction:column;gap:10px}
 .ri{}.rl{display:flex;justify-content:space-between;font-size:10px;color:var(--t2);margin-bottom:2px}.rl b{color:var(--t);font-weight:600}
 /* TRAFFIC */
-.tg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px}
 .ti{text-align:center;padding:8px;border-radius:var(--rs);background:rgba(255,255,255,0.03)}
 .ti-v{font-size:14px;font-weight:700;direction:ltr}.ti-l{font-size:9px;color:var(--t2);margin-top:2px}
 /* SERVICES */
