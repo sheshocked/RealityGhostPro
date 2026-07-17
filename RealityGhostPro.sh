@@ -451,9 +451,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--b);color:var(--t)
 <div class="g g2">
 <div><div class=sec style=margin-bottom:10px><div class=sec-h><h2>🔗 Configs</h2><button class=ci-b onclick=cpA() style=padding:2px6px>📋 All</button></div>
 <div class=cl id=cf></div></div>
-<div class=sec><div class=sec-h><h2>📄 Subscription</h2></div>
-<div style="display:grid;grid-template-columns:1fr;gap:6px">
-<div class=ti style="text-align:left;padding:10px"><div class=ti-l style="margin-bottom:4px">🔗 Sub Link</div><div style="display:flex;gap:4px"><input readonly id=su value="—" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:5px;padding:6px 8px;color:var(--t2);font-size:9px;direction:ltr;font-family:monospace" onclick=this.select()><button class=ci-b onclick="navigator.clipboard.writeText(document.getElementById('su').value);to('✓ Copied')">Copy</button></div></div>
+<div class=sec><div class=sec-h><h2>📄 Sub</h2></div>
+<div style=display:flex;gap:4px><input readonly id=su value="—" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:5px;padding:6px 8px;color:var(--t2);font-size:9px;direction:ltr;font-family:monospace" onclick=this.select()><button class=ci-b onclick="navigator.clipboard.writeText(document.getElementById('su').value);to('✓ Copied')">Copy</button></div>
 </div></div>
 
 <div class=sec><div class=sec-h><h2>🔧 Services</h2><span style=font-size:9px;color:var(--t2) id=svc></span></div>
