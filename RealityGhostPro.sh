@@ -733,10 +733,15 @@ uninstall() {
 
 main_install() {
   echo ""
-  figlet -f bigmono12 "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
-  echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
-  echo -e "${PURPLE}   Xray VLESS+Reality Installer & Manager${NC}"
-  echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
+  echo -e "${PURPLE}       ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
+  echo -e "${PURPLE}      ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
+  echo -e "${PURPLE}      ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
+  echo -e "${PURPLE}      ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
+  echo -e "${PURPLE}      ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
+  echo -e "${PURPLE}       ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
+  echo -e "${PURPLE}╔══════════════════════════════════════════════════════╗${NC}"
+  echo -e "${PURPLE}║   Xray VLESS+Reality Installer & Manager            ║${NC}"
+  echo -e "${PURPLE}╚══════════════════════════════════════════════════════╝${NC}"
   check_root
   detect_location
   echo -e "${INFO}${FLAG_RAW} ${LOC}${NC}"
@@ -771,10 +776,15 @@ main_install() {
 manage_menu() {
   while true; do
     clear
-    figlet -f bigmono12 "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
-    echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
-    echo -e "${PURPLE}   ${FLAG_RAW} ${LOC} • ${DOMAIN}${NC}"
-    echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
+    echo -e "${PURPLE}       ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
+    echo -e "${PURPLE}      ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
+    echo -e "${PURPLE}      ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
+    echo -e "${PURPLE}      ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
+    echo -e "${PURPLE}      ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
+    echo -e "${PURPLE}       ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
+    echo -e "${PURPLE}╔══════════════════════════════════════════════════════╗${NC}"
+    echo -e "${PURPLE}║   ${FLAG_RAW} ${LOC} • ${DOMAIN}                              ║${NC}"
+    echo -e "${PURPLE}╚══════════════════════════════════════════════════════╝${NC}"
     [[ -f "$CONFIG_DIR/config.json" ]] && DOMAIN=$(jq -r '.inbounds[0].settings.clients[0].email' "$CONFIG_DIR/config.json" 2>/dev/null | sed 's/user@//')
     [[ -z "$DOMAIN" || "$DOMAIN" == "null" ]] && DOMAIN="your-domain.com"
     echo "1. 📋 Connection Info"
@@ -812,10 +822,15 @@ case "${1:-}" in
   uninstall) check_root; uninstall ;;
   *)
     echo ""
-    figlet -f bigmono12 "RG PRO" 2>/dev/null | while IFS= read -r line; do echo -e "${PURPLE}${line}${NC}"; done
-    echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
-    echo -e "${PURPLE}   Xray VLESS+Reality Installer & Manager${NC}"
-    echo -e "${PURPLE} ═══════════════════════════════════════${NC}"
+    echo -e "${PURPLE}       ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
+    echo -e "${PURPLE}      ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
+    echo -e "${PURPLE}      ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
+    echo -e "${PURPLE}      ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
+    echo -e "${PURPLE}      ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
+    echo -e "${PURPLE}       ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
+    echo -e "${PURPLE}╔══════════════════════════════════════════════════════╗${NC}"
+    echo -e "${PURPLE}║   Xray VLESS+Reality Installer & Manager            ║${NC}"
+    echo -e "${PURPLE}╚══════════════════════════════════════════════════════╝${NC}"
     echo ""
     echo -e "  ${GREEN}install${NC}     — Install Xray Reality on your server"
     echo -e "  ${GREEN}manage${NC}      — Management menu"
