@@ -260,7 +260,6 @@ load_module modules/ngx_stream_module.so;
 user www-data;
 worker_processes auto;
 pid /run/nginx.pid;
-include /etc/modules-enabled/*.conf;
 
 events {
     worker_connections 16384;
@@ -368,7 +367,7 @@ INFOEOF
     IFS=':' read -r sni label label_url <<< "$entry"
     local real_sid=$(jq -r ".inbounds[0].streamSettings.realitySettings.shortIds[$idx]" "$CONFIG_DIR/config.json" 2>/dev/null)
     [[ -z "$real_sid" || "$real_sid" == "null" ]] && real_sid="${sids[$idx]}"
-    local link="vless://${uuid}@${DOMAIN}:443?flow=xtls-rprx-vision&encryption=none&security=reality&sni=${sni}&fp=chrome&echfq=none&pbk=${public_key}&sid=${real_sid}&allowinsecure=0&type=tcp&headerType=none#${FLAG}%20${label_url}"
+    local link="vless://${uuid}@${DOMAIN}:443?flow=xtls-rprx-vision&encryption=none&security=reality&sni=${sni}&fp=chrome&spx=%2F&pbk=${public_key}&sid=${real_sid}&allowinsecure=0&type=tcp&headerType=none#${FLAG}%20${label_url}"
     echo "$link" >> "$CONFIG_DIR/client_info.txt"
     idx=$((idx+1))
   done
@@ -382,7 +381,7 @@ build_subscription() {
   local pubkey=""
   local keys=$(/usr/local/bin/xray x25519 -i "$pbk" 2>/dev/null)
   pubkey=$(echo "$keys" | grep -oE "(PublicKey|Password \(PublicKey\)): ?\S+" | head -1 | grep -oE "\S+$")
-  [[ -z "$pubkey" ]] && pubkey=$(jq -r '.inbounds[0].streamSettings.realitySettings.shortIds[0] // ""' "$CONFIG_DIR/config.json")
+  [[ -z "$pubkey" ]] && echo -e "${WARN}Warning: could not derive public key from private key${NC}"
   mkdir -p "$SUB_DIR"
   local lines=()
   local idx=0
@@ -390,7 +389,7 @@ build_subscription() {
     IFS=':' read -r sni label label_url <<< "$entry"
     local real_sid=$(jq -r ".inbounds[0].streamSettings.realitySettings.shortIds[$idx]" "$CONFIG_DIR/config.json" 2>/dev/null)
     [[ -z "$real_sid" || "$real_sid" == "null" ]] && real_sid="0000000000000000"
-    lines+=("vless://${uuid}@${DOMAIN}:443?flow=xtls-rprx-vision&encryption=none&security=reality&sni=${sni}&fp=chrome&echfq=none&pbk=${pubkey}&sid=${real_sid}&allowinsecure=0&type=tcp&headerType=none#${FLAG}%20${label_url}")
+    lines+=("vless://${uuid}@${DOMAIN}:443?flow=xtls-rprx-vision&encryption=none&security=reality&sni=${sni}&fp=chrome&spx=%2F&pbk=${pubkey}&sid=${real_sid}&allowinsecure=0&type=tcp&headerType=none#${FLAG}%20${label_url}")
     idx=$((idx+1))
   done
   printf '%s\n' "${lines[@]}" | base64 -w 0 > "$SUB_DIR/sub.txt"
@@ -403,151 +402,370 @@ build_panel() {
   local pbk=$(jq -r '.inbounds[0].streamSettings.realitySettings.privateKey' "$CONFIG_DIR/config.json" 2>/dev/null)
   local pubkey_line=$(/usr/local/bin/xray x25519 -i "$pbk" 2>/dev/null | grep -oE "(PublicKey|Password \(PublicKey\)): ?\S+" | head -1 | grep -oE "\S+$")
   [[ -z "$pubkey_line" ]] && pubkey_line="$pbk"
-  local configs_js=""; local idx=0; local emojis=("🟢" "🟣" "🟠" "🔴" "🟤" "🔵")
+  local SERVER_IP=$(curl -4 -s --max-time 3 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
+
+  # Build configs array in the panel's CS format: {s,l,e,i}
+  local configs_js="" idx=0; local emojis=("🟢" "🟣" "🟠" "🔴" "🟤" "🔵")
   for entry in "${SNI_LIST[@]}"; do
     IFS=':' read -r sni label label_url <<< "$entry"
     local real_sid=$(jq -r ".inbounds[0].streamSettings.realitySettings.shortIds[$idx]" "$CONFIG_DIR/config.json" 2>/dev/null)
     [[ -z "$real_sid" || "$real_sid" == "null" ]] && real_sid="0000000000000000"
     [[ $idx -gt 0 ]] && configs_js+=","
-    configs_js+="{sni:'${sni}', label:'${FLAG_RAW} ${label}', emoji:'${emojis[$idx]}', sid:'${real_sid}'}"
+    configs_js+="{s:'${sni}', l:'${FLAG_RAW} ${label}', e:'${emojis[$idx]}', i:'${real_sid}'}"
     idx=$((idx+1))
   done
+
   mkdir -p "$STATUS_DIR"
   cat > "$STATUS_DIR/index.html" <<'PANEOF'
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="refresh" content="">
 <title>RG PRO · Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-:root{--b:#0f0f1a;--s:#15152a;--s2:#1e1e38;--br:rgba(130,140,255,0.06);--t:#e0e0f0;--t2:#6a6a9a;--p:#7c5cfc;--p2:#9a7cff;--g:#00d68f;--g2:#00b87a;--y:#f0a030;--r:#f05060;--bl:#4a9eff;--rad:16px;--rs:10px;--trans:all .2s ease}
+:root{
+  --bg:#080814; --glass:rgba(255,255,255,0.045); --glass2:rgba(255,255,255,0.07);
+  --stroke:rgba(255,255,255,0.09); --stroke2:rgba(255,255,255,0.14);
+  --t:#eef0ff; --t2:#9aa0c8; --t3:#6b7099;
+  --p:#8b7bff; --p2:#a99bff; --pg:#6c4cf0;
+  --g:#2fe0a6; --y:#ffc36b; --r:#ff6b81; --bl:#5aa6ff;
+  --rad:22px; --rad2:16px; --rad3:12px;
+  --shadow:0 10px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08);
+  --blur:blur(22px) saturate(160%);
+  --trans:all .25s cubic-bezier(.22,1,.36,1);
+}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',system-ui,sans-serif;background:var(--b);color:var(--t);min-height:100vh}
-.w{max-width:1440px;margin:0 auto;padding:24px 20px}
-.hd{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:18px 22px;background:var(--s);border:1px solid var(--br);border-radius:var(--rad);margin-bottom:20px}
-.hd-l{display:flex;align-items:center;gap:14px}
-.hd-l h1{font-size:20px;font-weight:900;letter-spacing:-.5px}
-.hd-l h1 span{background:linear-gradient(135deg,var(--p),var(--p2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hd-l small{font-size:11px;background:linear-gradient(135deg,rgba(124,92,252,0.15),rgba(154,124,255,0.05));padding:4px 10px;border-radius:100px;color:var(--p2);font-weight:600}
-.stt{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;font-size:11px;font-weight:600;background:rgba(0,214,143,0.07);color:var(--g);border:1px solid rgba(0,214,143,0.1)}
-.stt.r{background:rgba(240,80,96,0.07);color:var(--r);border-color:rgba(240,80,96,0.1)}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:pl 1.5s ease infinite}.dot.r{background:var(--r)}
-@keyframes pl{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
-.g{display:grid;gap:18px;margin-bottom:18px}
-.g-stats{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
-.g-main{grid-template-columns:1.5fr 1fr}
-.g-quick{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
-.cd{background:var(--s);border:1px solid var(--br);border-radius:var(--rad);padding:16px 18px;transition:var(--trans)}
-.cd:hover{border-color:rgba(130,140,255,0.12)}
-.cd-l{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:5px}
-.cd-v{font-size:22px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:baseline;gap:5px}
-.cd-v small{font-size:11px;font-weight:500;color:var(--t2)}
-.cd-v.xs{font-size:16px}
-.sec{background:var(--s);border:1px solid var(--br);border-radius:var(--rad);padding:20px;transition:var(--trans)}
-.sec:hover{border-color:rgba(130,140,255,0.1)}
-.sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(130,140,255,0.04)}
-.sec-h h2{font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px;color:var(--t)}
-.bc{height:6px;border-radius:100px;background:rgba(255,255,255,0.03);overflow:hidden;margin-top:6px}
-.bf{height:100%;border-radius:100px;transition:width 1.2s cubic-bezier(.22,1,.36,1)}
-.p{background:linear-gradient(90deg,#5a3fd4,#7c5cfc)}.gr{background:linear-gradient(90deg,#00b87a,#00d68f)}.yl{background:linear-gradient(90deg,#d49020,#f0a030)}
-.rs{display:flex;flex-direction:column;gap:12px}
-.rl{display:flex;justify-content:space-between;font-size:11px;color:var(--t2);margin-bottom:4px}.rl b{color:var(--t);font-weight:600}
-.tg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.ti{text-align:center;padding:12px 8px;border-radius:var(--rs);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);transition:var(--trans)}
-.ti:hover{background:rgba(124,92,252,0.04);border-color:rgba(124,92,252,0.08)}
-.ti-v{font-size:18px;font-weight:700;direction:ltr}
-.ti-l{font-size:10px;color:var(--t2);margin-top:3px;font-weight:500}
-.lg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.lgi{text-align:center;padding:12px 8px;border-radius:var(--rs);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
-.lgi-v{font-size:17px;font-weight:700}
-.lgi-l{font-size:10px;color:var(--t2);margin-top:3px}
-.sv{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
-.svc{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:var(--rs);background:rgba(255,255,255,0.02);font-size:11px;font-weight:600;border:1px solid rgba(255,255,255,0.05);transition:var(--trans)}
-.svc.o{color:var(--g);border-color:rgba(0,214,143,0.1);background:rgba(0,214,143,0.03)}
-.svc.x{color:var(--t2)}
-.cl{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px}
-.ci{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--rs);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:var(--trans)}
-.ci:hover{background:rgba(124,92,252,0.06);border-color:rgba(124,92,252,0.1);transform:translateY(-1px)}
-.ci-l{flex:1;min-width:0}
-.ci-l strong{display:block;font-size:10px;font-weight:600}
-.ci-s{font-size:8px;color:var(--p2);direction:ltr;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ci-b{font-size:7px;padding:3px 6px;border-radius:4px;background:rgba(255,255,255,0.05);border:none;cursor:pointer;color:var(--t2);transition:var(--trans)}
-.ci-b:hover{background:rgba(124,92,252,0.15);color:var(--p)}
-.ir{display:flex;flex-direction:column;gap:10px}
-.irow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:11px}
-.irow:not(:last-child){border-bottom:1px solid rgba(130,140,255,0.03)}
-.irow-l{color:var(--t2)}.irow-v{font-weight:500;direction:ltr;font-size:11px;text-align:left;word-break:break-all}
-.ch{display:flex;gap:6px;flex-wrap:wrap}
-.chp{padding:6px 12px;border-radius:100px;font-size:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:var(--trans)}
-.chp:hover{background:rgba(124,92,252,0.08);border-color:rgba(124,92,252,0.15);color:var(--p2)}
-.qa{display:flex;gap:8px;flex-wrap:wrap}
-.qab{padding:7px 14px;border-radius:var(--rs);font-size:11px;font-weight:600;border:1px solid rgba(124,92,252,0.15);background:rgba(124,92,252,0.06);color:var(--p2);cursor:pointer;transition:var(--trans)}
-.qab:hover{background:rgba(124,92,252,0.12);border-color:rgba(124,92,252,0.25);transform:translateY(-1px)}
-.ft{padding:18px;text-align:center;font-size:10px;color:var(--t2);border-top:1px solid rgba(255,255,255,0.02);margin-top:18px;display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
-.ft a{color:var(--p2);text-decoration:none;transition:var(--trans)}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  background:var(--bg); color:var(--t); min-height:100vh;
+  position:relative; overflow-x:hidden; -webkit-font-smoothing:antialiased;
+}
+/* animated glass background blobs */
+.bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.55;animation:float 22s ease-in-out infinite}
+.blob.a{width:520px;height:520px;background:radial-gradient(circle,#7c5cfc,transparent 70%);top:-160px;left:-120px}
+.blob.b{width:480px;height:480px;background:radial-gradient(circle,#4a9eff,transparent 70%);top:10%;right:-160px;animation-delay:-6s}
+.blob.c{width:440px;height:440px;background:radial-gradient(circle,#00d68f,transparent 70%);bottom:-180px;left:20%;animation-delay:-12s;opacity:.4}
+.blob.d{width:360px;height:360px;background:radial-gradient(circle,#ff6bce,transparent 70%);bottom:5%;right:15%;animation-delay:-3s;opacity:.35}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,-30px) scale(1.08)}66%{transform:translate(-30px,25px) scale(.95)}}
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.025;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.w{position:relative;z-index:2;max-width:1400px;margin:0 auto;padding:26px 22px 40px}
+/* glass primitives */
+.glass{background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--stroke);border-radius:var(--rad);box-shadow:var(--shadow)}
+/* header */
+.hd{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:18px 24px;margin-bottom:22px}
+.hd-l{display:flex;align-items:center;gap:15px}
+.logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:24px;background:linear-gradient(135deg,rgba(124,92,252,.35),rgba(74,158,255,.15));border:1px solid var(--stroke2);box-shadow:inset 0 1px 0 rgba(255,255,255,.15)}
+.hd-tt h1{font-size:19px;font-weight:800;letter-spacing:-.4px;line-height:1.1}
+.hd-tt h1 b{background:linear-gradient(135deg,var(--p2),var(--bl));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hd-tt .sub{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:12px;color:var(--t2)}
+.hd-tt .sub .flag{font-size:14px}
+.hd-tt .sub #dm{color:var(--p2);font-weight:600;direction:ltr}
+.hd-r{display:flex;align-items:center;gap:10px}
+.pill{display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:100px;font-size:12px;font-weight:700;background:rgba(47,224,166,.1);color:var(--g);border:1px solid rgba(47,224,166,.22);backdrop-filter:blur(8px)}
+.pill.off{background:rgba(255,107,129,.1);color:var(--r);border-color:rgba(255,107,129,.22)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--g);box-shadow:0 0 10px var(--g);animation:pulse 1.6s ease infinite}
+.dot.off{background:var(--r);box-shadow:0 0 10px var(--r)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
+.ghost-btn{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--glass2);border:1px solid var(--stroke);color:var(--t2);cursor:pointer;font-size:16px;transition:var(--trans)}
+.ghost-btn:hover{background:rgba(124,92,252,.16);color:var(--p2);border-color:rgba(124,92,252,.3);transform:translateY(-2px)}
+/* stat cards */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:16px;margin-bottom:20px}
+.stat{padding:18px 20px;position:relative;overflow:hidden}
+.stat::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent)}
+.stat .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:18px;background:var(--glass2);border:1px solid var(--stroke);margin-bottom:12px}
+.stat .lb{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--t3);font-weight:700}
+.stat .vl{font-size:25px;font-weight:800;letter-spacing:-.6px;margin-top:3px;display:flex;align-items:baseline;gap:5px}
+.stat .vl small{font-size:12px;font-weight:500;color:var(--t2)}
+.stat .mini{height:5px;border-radius:100px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:12px}
+.stat .mini i{display:block;height:100%;border-radius:100px;width:0;transition:width 1.1s cubic-bezier(.22,1,.36,1)}
+.fp{background:linear-gradient(90deg,var(--pg),var(--p2))}
+.fg{background:linear-gradient(90deg,#16b98a,var(--g))}
+.fy{background:linear-gradient(90deg,#e0982f,var(--y))}
+.fr{background:linear-gradient(90deg,#e0455c,var(--r))}
+/* main grid */
+.grid{display:grid;grid-template-columns:1.55fr 1fr;gap:20px;margin-bottom:20px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+.card{padding:22px 24px}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--stroke)}
+.card-h h2{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:9px}
+.card-h .badge{font-size:11px;color:var(--t2);font-weight:500}
+/* resource rows */
+.res{display:flex;flex-direction:column;gap:18px}
+.res-row .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12.5px}
+.res-row .top .nm{display:flex;align-items:center;gap:8px;color:var(--t2);font-weight:500}
+.res-row .top .vv{font-weight:700;direction:ltr;font-variant-numeric:tabular-nums}
+.bar{height:8px;border-radius:100px;background:rgba(255,255,255,.05);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:100px;width:0;transition:width 1.1s cubic-bezier(.22,1,.36,1)}
+/* services */
+.svc{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.svc-i{display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:var(--rad3);background:var(--glass2);border:1px solid var(--stroke);font-size:12.5px;font-weight:600;transition:var(--trans)}
+.svc-i .d{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+.svc-i.on .d{background:var(--g);box-shadow:0 0 8px var(--g)}
+.svc-i.off .d{background:var(--r);box-shadow:0 0 8px var(--r)}
+.svc-i .nm{flex:1;text-transform:capitalize}
+.svc-i .st{font-size:10.5px;color:var(--t3);font-weight:600}
+.svc-i.on .st{color:var(--g)}
+/* info rows */
+.info{display:flex;flex-direction:column}
+.info-r{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;font-size:12.5px;border-bottom:1px solid rgba(255,255,255,.05)}
+.info-r:last-child{border-bottom:none}
+.info-r .k{color:var(--t2);display:flex;align-items:center;gap:8px}
+.info-r .v{font-weight:600;direction:ltr;text-align:right;word-break:break-word;font-variant-numeric:tabular-nums}
+.info-r .v.ok{color:var(--g)}
+.info-r .v.warn{color:var(--y)}
+/* configs */
+.cfg{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.cfg-i{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:var(--rad3);background:var(--glass2);border:1px solid var(--stroke);cursor:pointer;transition:var(--trans)}
+.cfg-i:hover{background:rgba(124,92,252,.1);border-color:rgba(124,92,252,.28);transform:translateY(-2px)}
+.cfg-i .em{font-size:20px}
+.cfg-i .tx{flex:1;min-width:0}
+.cfg-i .tx b{display:block;font-size:12.5px;font-weight:600}
+.cfg-i .tx span{display:block;font-size:10px;color:var(--p2);direction:ltr;font-family:'Menlo',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cfg-i .cp{flex:0 0 auto;width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.05);border:1px solid var(--stroke);color:var(--t2);font-size:13px;transition:var(--trans)}
+.cfg-i:hover .cp{background:rgba(124,92,252,.2);color:var(--p2)}
+/* subscription */
+.sub-box{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.sub-in{flex:1;min-width:200px;padding:13px 16px;border-radius:var(--rad3);background:rgba(0,0,0,.25);border:1px solid var(--stroke);color:var(--t);font-size:12px;direction:ltr;font-family:'Menlo',monospace;outline:none}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:12px 18px;border-radius:var(--rad3);font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid transparent;transition:var(--trans);white-space:nowrap}
+.btn.pri{background:linear-gradient(135deg,var(--pg),var(--p));color:#fff;box-shadow:0 6px 20px rgba(108,76,240,.4)}
+.btn.pri:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(108,76,240,.55)}
+.btn.gl{background:var(--glass2);border-color:var(--stroke);color:var(--t2)}
+.btn.gl:hover{background:rgba(124,92,252,.14);color:var(--p2);border-color:rgba(124,92,252,.3);transform:translateY(-2px)}
+.qa{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+/* mini stat trio */
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.trio-i{text-align:center;padding:16px 10px;border-radius:var(--rad3);background:var(--glass2);border:1px solid var(--stroke)}
+.trio-i .v{font-size:20px;font-weight:800;direction:ltr;letter-spacing:-.4px}
+.trio-i .l{font-size:10.5px;color:var(--t3);margin-top:5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+/* footer */
+.ft{display:flex;justify-content:center;align-items:center;gap:20px;flex-wrap:wrap;padding:22px;margin-top:26px;font-size:11.5px;color:var(--t3)}
+.ft a{color:var(--p2);text-decoration:none;transition:var(--trans);display:inline-flex;align-items:center;gap:6px}
 .ft a:hover{color:var(--p)}
-.ts{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(21,21,42,0.96);border:1px solid rgba(0,214,143,0.2);border-radius:var(--rs);padding:10px 20px;font-size:11px;color:var(--g);opacity:0;transition:all .35s cubic-bezier(.22,1,.36,1);z-index:999;pointer-events:none;backdrop-filter:blur(10px)}
-.ts.s{opacity:1;transform:translateX(-50%) translateY(0)}
-@media(max-width:1024px){.g-main{grid-template-columns:1fr}.w{padding:20px 16px}}
-@media(max-width:700px){.g-stats{grid-template-columns:repeat(2,1fr)}.hd-l h1{font-size:17px}.hd{padding:14px 16px}.sec{padding:16px}.cl{grid-template-columns:1fr}}
-@media(max-width:480px){.g-stats{grid-template-columns:1fr}.w{padding:12px 10px}.hd-l h1{font-size:15px}.hd-l small{display:none}.tg{grid-template-columns:repeat(3,1fr)}.sv{grid-template-columns:1fr}}
+.ft .sep{width:4px;height:4px;border-radius:50%;background:var(--t3);opacity:.5}
+/* toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(90px);z-index:999;padding:13px 24px;border-radius:14px;font-size:12.5px;font-weight:700;color:var(--g);background:rgba(12,12,24,.85);backdrop-filter:blur(16px);border:1px solid rgba(47,224,166,.28);box-shadow:0 10px 40px rgba(0,0,0,.5);opacity:0;transition:all .4s cubic-bezier(.22,1,.36,1);pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* responsive */
+@media(max-width:960px){.grid,.grid2{grid-template-columns:1fr}}
+@media(max-width:560px){.w{padding:18px 14px 32px}.stats{grid-template-columns:repeat(2,1fr)}.svc{grid-template-columns:1fr}.hd-tt h1{font-size:17px}.card{padding:18px 16px}}
+@media(max-width:380px){.stats{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<div class=w>
-<div class=hd><div class=hd-l><h1>👻 RG <span>PRO</span></h1></div><div class=hd-r><span class=stt id=stb><span class=dot id=std></span><span id=stl>Online</span></span></div></div>
-<div class="g g-stats" id=rw1></div>
-<div class="g g-main">
-<div>
-<div class=sec style=margin-bottom:18px><div class=sec-h><h2>🖥 System</h2><span id=upt style=font-size:10px;color:var(--t2)>—</span></div><div class=rs id=sys_rs></div></div>
-<div class=sec><div class=sec-h><h2>🔗 Configs</h2><button class=ci-b onclick=cpA() style=padding:2px 8px;font-size:9px>📋 All</button></div><div class=cl id=cf></div></div>
+<div class="bg"><span class="blob a"></span><span class="blob b"></span><span class="blob c"></span><span class="blob d"></span></div>
+<div class="grain"></div>
+<div class="w">
+
+  <!-- Header -->
+  <header class="hd glass">
+    <div class="hd-l">
+      <div class="logo">👻</div>
+      <div class="hd-tt">
+        <h1>RealityGhost <b>PRO</b></h1>
+        <div class="sub"><span class="flag" id="flag">🌍</span><span id="dm">${DOMAIN}</span></div>
+      </div>
+    </div>
+    <div class="hd-r">
+      <div class="pill" id="statusPill"><span class="dot" id="statusDot"></span><span id="statusTxt">Online</span></div>
+      <button class="ghost-btn" onclick="ALL()" title="Refresh">↻</button>
+    </div>
+  </header>
+
+  <!-- Stat cards -->
+  <section class="stats" id="statCards"></section>
+
+  <!-- Main grid: resources + services -->
+  <section class="grid">
+    <div class="card glass">
+      <div class="card-h"><h2>🖥️ System Resources</h2><span class="badge" id="uptimeBadge">—</span></div>
+      <div class="res" id="resList"></div>
+    </div>
+    <div class="card glass">
+      <div class="card-h"><h2>🔧 Services</h2></div>
+      <div class="svc" id="svcList"></div>
+      <div class="card-h" style="margin-top:20px"><h2>📡 Server</h2></div>
+      <div class="info" id="srvInfo"></div>
+    </div>
+  </section>
+
+  <!-- Configs -->
+  <section class="card glass" style="margin-bottom:20px">
+    <div class="card-h"><h2>🔗 Configs</h2><span class="badge">Tap to copy</span></div>
+    <div class="cfg" id="cfgList"></div>
+  </section>
+
+  <!-- Subscription + traffic/load -->
+  <section class="grid2">
+    <div class="card glass">
+      <div class="card-h"><h2>📥 Subscription</h2></div>
+      <div class="sub-box">
+        <input class="sub-in" id="subIn" readonly value="">
+        <button class="btn pri" onclick="copySub()">📋 Copy Link</button>
+      </div>
+      <div class="qa">
+        <button class="btn gl" onclick="copyAll()">📄 Copy All Configs</button>
+        <button class="btn gl" onclick="ALL()">🔄 Refresh</button>
+      </div>
+    </div>
+    <div class="card glass">
+      <div class="card-h"><h2>📊 Traffic</h2><span class="badge">since install</span></div>
+      <div class="trio" id="trafList"></div>
+      <div class="card-h" style="margin-top:18px"><h2>🌐 Load Average</h2></div>
+      <div class="trio" id="loadList"></div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="ft glass">
+    <span>👻 RealityGhost PRO</span>
+    <span class="sep"></span>
+    <a href="https://github.com/sheshocked/RealityGhostPro" target="_blank">⭐ GitHub</a>
+    <span class="sep"></span>
+    <span>Xray VLESS + Reality · <span id="xvFooter">—</span></span>
+  </footer>
+
 </div>
-<div>
-<div class=sec><div class=sec-h><h2>🔧 Services</h2><span style=font-size:9px;color:var(--t2) id=svc></span></div><div class=sv id=sv></div>
-<div class=sec-h style=margin:14px 0 6px><h2>📄 Sub</h2></div><div style=display:flex;gap:4px><input readonly id=su value=— style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:7px 10px;color:var(--t2);font-size:10px;direction:ltr;font-family:monospace" onclick=this.select()><button class=ci-b onclick="navigator.clipboard.writeText(document.getElementById('su').value);to('✓ Copied')">📋</button></div>
-<div class=sec-h style=margin:14px 0 6px><h2>⚡ Actions</h2></div><div class=qa><span class=qab onclick=cpA()>📋 Copy All</span><span class=qab onclick=window.open('https://'+D+'/sub')>📥 Sub</span><span class=qab onclick=window.location.reload()>🔄 Refresh</span></div>
-</div>
-</div>
-<div class="g g-quick">
-<div class=sec><div class=sec-h><h2>📊 Traffic</h2></div><div class=tg><div><div class=ti-v id=td>—</div><div class=ti-l>Today</div></div><div><div class=ti-v id=mo>—</div><div class=ti-l>Month</div></div><div><div class=ti-v id=tot>—</div><div class=ti-l>Total</div></div></div>
-<div class=sec-h style=margin:14px 0 8px><h2>🌐 Load</h2></div><div class=lg><div class=lgi><div class=lgi-v id=l1>—</div><div class=lgi-l>1 min</div></div><div class=lgi><div class=lgi-v id=l5>—</div><div class=lgi-l>5 min</div></div><div class=lgi><div class=lgi-v id=l15>—</div><div class=lgi-l>15 min</div></div></div></div>
-<div class=sec><div class=sec-h><h2>📡 Server</h2></div><div class=ir id=srv_ir></div></div>
-<div class=sec><div class=sec-h><h2>🏷️ Quick Links</h2></div><div class=ch id=qa></div></div>
-</div>
-<footer class=ft><span>👻 RG PRO</span><span>🔗 <a href=https://github.com/sheshocked/RealityGhostPro target=_blank>GitHub</a></span><span>⚡ <span id=ftr>—</span></span></footer>
-</div>
-<div class=ts id=ts></div>
+<div class="toast" id="toast"></div>
+
 <script>
-var D='${DOMAIN}',U='${uuid}',P='${pubkey_line}',SIP='${SERVER_IP}';
-var CS=[{s:'www.gstatic.com',l:'Google Static',e:'🟢',i:'6c17063bbbc2815f'},{s:'ajax.googleapis.com',l:'Google AJAX',e:'🟣',i:'45b782b0ab099836'},{s:'storage.googleapis.com',l:'Google Storage',e:'🟠',i:'2a24f880f00bd81c'},{s:'fonts.gstatic.com',l:'Google Fonts',e:'🔴',i:'5e477f536f9d3d13'},{s:'fonts.googleapis.com',l:'Google Fonts API',e:'🟤',i:'faf18e55b6abd0e5'},{s:'www.google.com',l:'Google',e:'🔵',i:'f3eb44acd99a0125'}];
+var D='${DOMAIN}', U='${uuid}', P='${pubkey_line}', SIP='${SERVER_IP}';
+var CS=[/*CONFIGS*/];
+var S={};
+
+function esc(x){return (''+x).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function lk(c){return 'vless://'+U+'@'+D+':443?encryption=none&flow=xtls-rprx-vision&security=reality&fp=chrome&type=tcp&headerType=none&sni='+c.s+'&pbk='+P+'&sid='+c.i+'#'+encodeURIComponent(c.l)}
-function to(m){var t=document.getElementById('ts');t.textContent=m;t.classList.add('s');setTimeout(function(){t.classList.remove('s')},2000)}
-function fm(b){if(!b||b===0)return'0 B';var u=['B','KB','MB','GB','TB'];var i=0,n=Number(b);while(n>=1024&&i<u.length-1){n/=1024;i++}return n.toFixed(i<2?0:1)+' '+u[i]}
-async function F(){try{var r=await fetch('./stats.json?t='+Date.now());if(!r.ok)throw Error();S=await r.json()}catch(e){S={}}}
-function u(){var e=document.getElementById('stl');e.textContent=S.online?'Online':'Offline';document.getElementById('std').className='dot'+(S.online?'':' r');document.getElementById('stb').className='stt'+(S.online?'':' r')}
-async function X(){await F();u();var s=document.getElementById('rw1'),d=S.disk||{},r=S.ram||{},c=S.cpu||{},l=S.load||{};s.innerHTML='';var a=[{l:S.online?'✅':'❌',n:'Status',v:S.online?'Online':'Offline',s:''},{l:'💾',n:'Disk',v:(typeof d.used==='string'?parseFloat(d.used):((d.used||0)/1024)).toFixed(1)+'/'+(typeof d.total==='string'?parseFloat(d.total):((d.total||0)/1024)).toFixed(1)+' GB',s:''},{l:'🧠',n:'RAM',v:r.total+' MB',s:r.usage?r.usage.toFixed(1)+'%':''},{l:'⚙️',n:'CPU',v:(typeof c==='string'?parseFloat(c):(c.usage||0)).toFixed(1)+'%',s:''},{l:'📊',n:'Cores',v:(typeof c==='string'?'—':c.cores||'—'),s:''},{l:'🔗',n:'Conn',v:S.connections||0,s:''},{l:'📌',n:'Xray',v:S.xray_version||'—',s:''}];a.forEach(function(t){s.innerHTML+='<div class=cd><div class=cd-l>'+t.l+' '+t.n+'</div><div class="cd-v '+(t.v&&t.v.length>8?'xs':'')+'">'+t.v+(t.s?'<small>'+t.s+'</small>':'')+'</div></div>'})}
-async function Y(){await F();var s=document.getElementById('sys_rs'),d=S.disk||{},r=S.ram||{},c=S.cpu||{};var cu=typeof c==='string'?parseFloat(c):(c.usage||0);var cc=typeof c==='string'?'—':(c.cores||'—');var du=typeof d.used==='string'?parseFloat(d.used):((d.used||0)/1024);var dt=typeof d.total==='string'?parseFloat(d.total):((d.total||0)/1024);var dp=d.usage||(du&&dt?(du/dt*100).toFixed(1):0);var h='<div class=rl><span>💾 Disk</span><b>'+du.toFixed(1)+'/'+dt.toFixed(1)+' GB</b></div><div class=bc><div class="bf p" style=width:'+dp+'%></div></div>';h+='<div class=rl><span>🧠 RAM ('+r.total+' MB)</span><b>'+((r.used||0)).toFixed(0)+' MB / '+(r.usage||0).toFixed(1)+'%</b></div><div class=bc><div class="bf gr" style=width:'+(r.usage||0)+'%></div></div>';h+='<div class=rl><span>⚙️ CPU ('+cc+' cores)</span><b>'+cu.toFixed(1)+'%</b></div><div class=bc><div class="bf yl" style=width:'+cu+'%></div></div>';s.innerHTML=h;document.getElementById('upt').textContent=S.uptime?'Up '+S.uptime:'—'}
-async function Z(){await F();var s=document.getElementById('sv'),c=S.services||{};s.innerHTML='';Object.keys(c).forEach(function(k){s.innerHTML+='<div class="svc '+(c[k]==='active'?'o':'x')+'"><span>'+(c[k]==='active'?'🟢':'🔴')+'</span>'+k+'</div>'})}
-async function W(){await F();document.getElementById('td').textContent=(S.traffic&&S.traffic.today!=null?fm(S.traffic.today):'—');document.getElementById('mo').textContent=(S.traffic&&S.traffic.month!=null?fm(S.traffic.month):'—');document.getElementById('tot').textContent=(S.traffic&&S.traffic.total!=null?fm(S.traffic.total):'—')}
-async function V(){await F();var l=S.load||{};document.getElementById('l1').textContent=l['1m']!=null?l['1m']:'—';document.getElementById('l5').textContent=l['5m']!=null?l['5m']:'—';document.getElementById('l15').textContent=l['15m']!=null?l['15m']:'—'}
-function si(){var s=document.getElementById('srv_ir'),i=S.server||{};if(i&&Object.keys(i).length>0){s.innerHTML='';Object.keys(i).forEach(function(k){s.innerHTML+='<div class=irow><span class=irow-l>'+k+'</span><span class=irow-v>'+(i[k]||'—')+'</span></div>'});return}var n=S.network||{},xr=S.xray_version||'—',up=S.uptime||'—';s.innerHTML='<div class=irow><span class=irow-l>🌐 IP</span><span class=irow-v style=color:var(--p2)>'+SIP+'</span></div><div class=irow><span class=irow-l>🔗 DNS</span><span class=irow-v>9.9.9.9 · 9.9.9.12</span></div><div class=irow><span class=irow-l>⚡ TCP CC</span><span class=irow-v style=color:var(--g)>BBR</span></div><div class=irow><span class=irow-l>🚀 Xray</span><span class=irow-v style=color:var(--p2)>v'+xr+'</span></div><div class=irow><span class=irow-l>⏱ Uptime</span><span class=irow-v style=color:var(--g)>'+up+'</span></div><div class=irow><span class=irow-l>🔒 SSL</span><span class=irow-v style=color:var(--g)>'+(S.dns_ok?'✅ Active':'⚠ Pending')+'</span></div>'}
-function ql(){var s=document.getElementById('qa'),l=S.links||[];if(l&&l.length>0){s.innerHTML='';l.forEach(function(t){s.innerHTML+='<span class=chp onclick=window.open("'+t.url+'")>'+t.label+'</span>'});return}s.innerHTML='<span class=chp onclick=window.open("https://'+D+'/sub")>📥 Subscription</span><span class=chp onclick=cpA()>📋 Copy All</span>'}
-function cf(){var s=document.getElementById('cf');s.innerHTML='';CS.forEach(function(c,i){s.innerHTML+='<div class=ci onclick=cp('+i+') title="Click to copy"><span>'+c.e+'</span><div class=ci-l><strong>'+c.l+'</strong><div class=ci-s>'+c.s.substring(0,24)+'</div></div><span class=ci-b>📋</span></div>'})}
-function sb(){document.getElementById('su').value=S.sub_link||location.protocol+'//'+D+'/sub'}
-function cp(i){navigator.clipboard.writeText(lk(CS[i]));to('✓ Copied '+CS[i].l)}
-function cpA(){navigator.clipboard.writeText(S.sub||'');to('✓ Copied all')}
-function ft(){document.getElementById('ftr').textContent=S.xray_version?'v'+S.xray_version:'—'}
-async function ALL(){await Promise.all([X(),Y(),Z(),W(),V(),si(),ql(),cf(),sb(),ft()])}
-ALL();setInterval(ALL,3000)
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show')},2000)}
+function copy(txt,msg){navigator.clipboard&&navigator.clipboard.writeText(txt);toast(msg)}
+function fmtBytes(b){if(b==null)return'—';b=Number(b);if(!b)return'0 B';var u=['B','KB','MB','GB','TB'],i=0;while(b>=1024&&i<u.length-1){b/=1024;i++}return b.toFixed(i<2?0:1)+' '+u[i]}
+function num(x){return typeof x==='string'?parseFloat(x)||0:(x||0)}
+function barColor(p){return p>=85?'fr':p>=60?'fy':'fp'}
+
+async function fetchStats(){try{var r=await fetch('./stats.json?t='+Date.now());S=r.ok?await r.json():{}}catch(e){S={}}}
+
+function renderStatus(){
+  var on=!!S.online || (S.services&&S.services.xray==='active');
+  document.getElementById('statusTxt').textContent=on?'Online':'Offline';
+  document.getElementById('statusDot').className='dot'+(on?'':' off');
+  document.getElementById('statusPill').className='pill'+(on?'':' off');
+}
+function renderStats(){
+  var r=S.ram||{}, c=S.cpu, d=S.disk||{}, on=(S.services&&S.services.xray==='active')||S.online;
+  var cpuU=num(c&&c.usage!=null?c.usage:c), cores=(c&&c.cores)?c.cores:(S.cores||'—');
+  var ramU=num(r.usage), diskU=num(d.usage);
+  var cards=[
+    {ic:on?'✅':'⛔',lb:'Status',v:on?'Online':'Offline',bar:null},
+    {ic:'🧠',lb:'RAM',v:ramU.toFixed(0)+'<small>%</small>',sub:(r.total?r.total+' MB':''),bar:ramU},
+    {ic:'⚙️',lb:'CPU',v:cpuU.toFixed(0)+'<small>%</small>',sub:(cores!=='—'?cores+' cores':''),bar:cpuU},
+    {ic:'💾',lb:'Disk',v:diskU.toFixed(0)+'<small>%</small>',sub:((d.used||'')+' / '+(d.total||'')),bar:diskU},
+    {ic:'🔗',lb:'Connections',v:(S.connections!=null?S.connections:0),bar:null},
+    {ic:'🚀',lb:'Xray',v:'<small>v</small>'+esc(S.xray_version||'—').replace('v',''),bar:null}
+  ];
+  var h='';
+  cards.forEach(function(x){
+    h+='<div class="stat glass"><div class="ic">'+x.ic+'</div><div class="lb">'+x.lb+'</div><div class="vl">'+x.v+'</div>';
+    if(x.bar!=null){h+='<div class="mini"><i class="'+barColor(x.bar)+'" data-w="'+Math.min(x.bar,100)+'"></i></div>';}
+    h+='</div>';
+  });
+  document.getElementById('statCards').innerHTML=h;
+  animateBars();
+}
+function renderResources(){
+  var r=S.ram||{}, c=S.cpu, d=S.disk||{};
+  var cpuU=num(c&&c.usage!=null?c.usage:c), ramU=num(r.usage), diskU=num(d.usage);
+  var rows=[
+    {nm:'💾 Disk',vv:(d.used||'—')+' / '+(d.total||'—'),p:diskU},
+    {nm:'🧠 Memory',vv:(r.used!=null?r.used+' / '+(r.total||'?')+' MB':'—'),p:ramU},
+    {nm:'⚙️ CPU',vv:cpuU.toFixed(1)+' %'+((c&&c.cores)?' · '+c.cores+' cores':''),p:cpuU}
+  ];
+  var h='';
+  rows.forEach(function(x){
+    h+='<div class="res-row"><div class="top"><span class="nm">'+x.nm+'</span><span class="vv">'+esc(x.vv)+'</span></div><div class="bar"><i class="'+barColor(x.p)+'" data-w="'+Math.min(x.p,100)+'"></i></div></div>';
+  });
+  document.getElementById('resList').innerHTML=h;
+  document.getElementById('uptimeBadge').textContent=S.uptime?'⏱ Up '+S.uptime:'—';
+  animateBars();
+}
+function renderServices(){
+  var c=S.services||{}, keys=Object.keys(c);
+  if(!keys.length)keys=['nginx','xray','monitor'];
+  var h='';
+  keys.forEach(function(k){
+    var on=c[k]==='active';
+    h+='<div class="svc-i '+(on?'on':'off')+'"><span class="d"></span><span class="nm">'+esc(k)+'</span><span class="st">'+(on?'Active':'Down')+'</span></div>';
+  });
+  document.getElementById('svcList').innerHTML=h;
+}
+function renderServer(){
+  var rows=[
+    {k:'🌐 IP',v:SIP||'—',cls:''},
+    {k:'🚀 Xray',v:'v'+esc((S.xray_version||'—').replace(/^v/,'')),cls:''},
+    {k:'⚡ TCP',v:'BBR',cls:''},
+    {k:'🔒 SSL',v:S.dns_ok?'Active':'Pending',cls:S.dns_ok?'ok':'warn'},
+    {k:'⏱ Uptime',v:S.uptime||'—',cls:''}
+  ];
+  var h='';
+  rows.forEach(function(x){h+='<div class="info-r"><span class="k">'+x.k+'</span><span class="v '+x.cls+'">'+esc(x.v)+'</span></div>';});
+  document.getElementById('srvInfo').innerHTML=h;
+}
+function renderConfigs(){
+  var h='';
+  CS.forEach(function(c,i){
+    h+='<div class="cfg-i" onclick="copyCfg('+i+')"><span class="em">'+(c.e||'🔵')+'</span><span class="tx"><b>'+esc(c.l)+'</b><span>'+esc(c.s)+'</span></span><span class="cp">📋</span></div>';
+  });
+  document.getElementById('cfgList').innerHTML=h||'<div style="color:var(--t3);font-size:12px">No configs</div>';
+}
+function renderTraffic(){
+  var t=S.traffic||{};
+  var items=[{v:fmtBytes(t.today),l:'Today'},{v:fmtBytes(t.month),l:'Month'},{v:fmtBytes(t.total),l:'Total'}];
+  document.getElementById('trafList').innerHTML=items.map(function(x){return '<div class="trio-i"><div class="v">'+x.v+'</div><div class="l">'+x.l+'</div></div>';}).join('');
+}
+function renderLoad(){
+  var l=S.load||{};
+  var items=[{v:l['1m']!=null?l['1m']:'—',l:'1 min'},{v:l['5m']!=null?l['5m']:'—',l:'5 min'},{v:l['15m']!=null?l['15m']:'—',l:'15 min'}];
+  document.getElementById('loadList').innerHTML=items.map(function(x){return '<div class="trio-i"><div class="v">'+x.v+'</div><div class="l">'+x.l+'</div></div>';}).join('');
+}
+function renderSub(){document.getElementById('subIn').value=S.sub_link||(location.protocol+'//'+D+'/sub');document.getElementById('xvFooter').textContent=S.xray_version?('v'+(''+S.xray_version).replace(/^v/,'')):'—';}
+
+function copyCfg(i){copy(lk(CS[i]),'✓ Copied · '+CS[i].l)}
+function copyAll(){var all=CS.map(lk).join('\n');copy(S.sub||all,'✓ Copied all configs')}
+function copySub(){copy(document.getElementById('subIn').value,'✓ Subscription link copied')}
+
+function animateBars(){requestAnimationFrame(function(){document.querySelectorAll('[data-w]').forEach(function(el){el.style.width=el.getAttribute('data-w')+'%';});});}
+
+async function ALL(){
+  await fetchStats();
+  renderStatus();renderStats();renderResources();renderServices();renderServer();renderConfigs();renderTraffic();renderLoad();renderSub();
+}
+ALL();setInterval(ALL,3000);
 </script>
-</body></html>
+</body>
+</html>
+
 PANEOF
-  local SERVER_IP=$(curl -4 -s --max-time 3 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
-  sed -i "s/\${DOMAIN}/$DOMAIN/g; s/\${uuid}/$uuid/g; s/\${pubkey_line}/$pubkey_line/g; s/\${SERVER_IP}/$SERVER_IP/g" "$STATUS_DIR/index.html"
+
+  # Safely inject dynamic values (python avoids sed escaping issues with / & ')
+  python3 - "$STATUS_DIR/index.html" "$DOMAIN" "$uuid" "$pubkey_line" "$SERVER_IP" "$configs_js" <<'PYEOF'
+import sys
+f, dom, uid, pbk, sip, cfg = sys.argv[1:7]
+s = open(f, encoding="utf-8").read()
+s = (s.replace("${DOMAIN}", dom)
+      .replace("${uuid}", uid)
+      .replace("${pubkey_line}", pbk)
+      .replace("${SERVER_IP}", sip)
+      .replace("/*CONFIGS*/", cfg))
+open(f, "w", encoding="utf-8").write(s)
+PYEOF
+
   chown -R www-data:www-data "$STATUS_DIR" 2>/dev/null
-  echo -e "${OK}Panel built"
+  echo -e "${OK}Panel built (glassmorphism)"
 }
 
 install_monitor() {
@@ -612,7 +830,7 @@ show_info() {
   echo -e "${CYAN}══════════════════════════════════════${NC}"
   echo ""
   echo -e "${INFO}UUID: ${uuid}${NC}"
-  echo -e "${INFO}Public Key: $(/usr/local/bin/xray x25519 -i "$pbk" 2>/dev/null | grep -oP '(?<=Password: )\S+')${NC}"
+  echo -e "${INFO}Public Key: $(/usr/local/bin/xray x25519 -i "$pbk" 2>/dev/null | grep -oE "(PublicKey|Password \(PublicKey\)): ?\S+" | head -1 | grep -oE "\S+$")${NC}"
   echo ""
   local idx=0
   for entry in "${SNI_LIST[@]}"; do
@@ -689,10 +907,16 @@ config_manager() {
          build_subscription; build_panel
          echo -e "${OK}Short IDs rotated${NC}"
          echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
-      4) echo -e "UUID: $(jq -r '.inbounds[0].settings.clients[0].id' "$CONFIG_DIR/config.json")"
+      4) local u4=$(jq -r '.inbounds[0].settings.clients[0].id' "$CONFIG_DIR/config.json")
+         local pk4=$(jq -r '.inbounds[0].streamSettings.realitySettings.privateKey' "$CONFIG_DIR/config.json")
+         local pub4=$(/usr/local/bin/xray x25519 -i "$pk4" 2>/dev/null | grep -oE "(PublicKey|Password \(PublicKey\)): ?\S+" | head -1 | grep -oE "\S+$")
+         echo -e "UUID: ${u4}"; echo -e "Public Key: ${pub4}"
          echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       5) local u=$(jq -r '.inbounds[0].settings.clients[0].id' "$CONFIG_DIR/config.json")
-         local l="vless://${u}@${DOMAIN}:443?flow=xtls-rprx-vision&encryption=none&security=reality&sni=www.gstatic.com&fp=chrome&pbk=$(jq -r '.inbounds[0].streamSettings.realitySettings.shortIds[0]' "$CONFIG_DIR/config.json")&sid=$(jq -r '.inbounds[0].streamSettings.realitySettings.shortIds[0]' "$CONFIG_DIR/config.json")#RG PRO"
+         local pk5=$(jq -r '.inbounds[0].streamSettings.realitySettings.privateKey' "$CONFIG_DIR/config.json")
+         local pub5=$(/usr/local/bin/xray x25519 -i "$pk5" 2>/dev/null | grep -oE "(PublicKey|Password \(PublicKey\)): ?\S+" | head -1 | grep -oE "\S+$")
+         local sid5=$(jq -r '.inbounds[0].streamSettings.realitySettings.shortIds[0]' "$CONFIG_DIR/config.json")
+         local l="vless://${u}@${DOMAIN}:443?flow=xtls-rprx-vision&encryption=none&security=reality&sni=www.gstatic.com&fp=chrome&pbk=${pub5}&sid=${sid5}&spx=%2F&type=tcp&headerType=none#RG-PRO"
          echo "$l" | qrencode -t ANSIUTF8
          echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       0) return ;;
@@ -751,6 +975,7 @@ pull_update() {
 
 bot_setup() {
   echo -e "${INFO}Installing Telegram bot..."
+  [[ -f /usr/local/bin/rg-bot.py ]] || install_bot_script
   chmod +x /usr/local/bin/rg-bot.py
   /usr/local/bin/rg-bot.py init
   echo -ne "${BOLD}Bot token (from BotFather): ${NC}"
@@ -759,12 +984,17 @@ bot_setup() {
   mkdir -p /etc/realityghost
   echo "{\"enabled\":true,\"token\":\"$bot_token\",\"domain\":\"$DOMAIN\",\"admin_ids\":[]}" > /etc/realityghost/bot_config.json
   cat > /etc/systemd/system/realityghost-bot.service <<BOTEOF
-[Unit]Description=RealityGhost Bot
+[Unit]
+Description=RealityGhost Bot
 After=network.target xray.service
-[Service]Type=simple
+[Service]
+Type=simple
 ExecStart=/usr/bin/python3 /usr/local/bin/rg-bot.py runbot
-Restart=always;RestartSec=5;User=root
-[Install]WantedBy=multi-user.target
+Restart=always
+RestartSec=5
+User=root
+[Install]
+WantedBy=multi-user.target
 BOTEOF
   systemctl daemon-reload
   systemctl enable realityghost-bot 2>/dev/null
@@ -789,6 +1019,7 @@ bot_menu() {
     echo "4. Add User"
     echo "5. Delete User"
     echo "6. Stats"
+    echo "7. Setup / Enable Bot (set token)"
     echo "0. Back"
     echo -ne "${BOLD}Choice: ${NC}"; read -r opt
     case $opt in
@@ -803,6 +1034,7 @@ bot_menu() {
         /usr/local/bin/rg-bot.py deluser "$id" 2>&1 || echo "❌"
         echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       6) /usr/local/bin/rg-bot.py stats 2>&1; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
+      7) bot_setup; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       0) return ;;
     esac
   done
@@ -831,7 +1063,7 @@ renew_ssl() {
     echo -ne "${BOLD}Domain: ${NC}"; read -r DOMAIN
   fi
   systemctl stop nginx 2>/dev/null
-  certbot certonly --standalone --non-interactive --agree-tos -d "${DOMAIN}" -m "${EMAIL:-info@kir.com}" 2>/dev/null
+  certbot certonly --standalone --non-interactive --agree-tos -d "${DOMAIN}" -m "${EMAIL:-admin@${DOMAIN}}" 2>/dev/null
   systemctl start nginx 2>/dev/null
   if [[ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]]; then
     echo -e "${OK}SSL renewed for ${DOMAIN}"
@@ -841,6 +1073,415 @@ renew_ssl() {
 }
 
 # ─── Main ────────────────────────────────────────────────────────────
+
+optimize_dns() {
+  echo -e "${INFO}Optimizing DNS resolvers..."
+  if grep -q "nameserver 1.1.1.1" /etc/resolv.conf 2>/dev/null; then
+    echo -e "${OK}DNS already optimized"
+    return 0
+  fi
+  cat > /etc/resolv.conf <<'RESOLVEOF'
+nameserver 1.1.1.1
+nameserver 8.8.8.8
+nameserver 9.9.9.9
+options edns0
+RESOLVEOF
+  echo -e "${OK}DNS optimized (1.1.1.1 / 8.8.8.8 / 9.9.9.9)"
+}
+
+install_bot_script() {
+  echo -e "${INFO}Installing Telegram bot manager..."
+  mkdir -p /etc/realityghost
+  cat > /usr/local/bin/rg-bot.py <<'RGBOTEOF'
+#!/usr/bin/env python3
+# RealityGhost PRO - Telegram management bot
+# Self-contained: uses only the Python standard library + requests.
+# CLI: init | adduser <name> [mb] [days] | deluser <id> | list | stats | enforce | runbot
+import os
+import sys
+import json
+import time
+import uuid as uuidlib
+import sqlite3
+import subprocess
+import urllib.parse
+import datetime
+
+CONFIG_DIR = "/usr/local/etc/xray"
+XRAY_CONFIG = os.path.join(CONFIG_DIR, "config.json")
+BOT_DIR = "/etc/realityghost"
+BOT_CONFIG = os.path.join(BOT_DIR, "bot_config.json")
+USERS_DB = os.path.join(BOT_DIR, "users.db")
+XRAY_BIN = "/usr/local/bin/xray"
+
+SNI_LIST = [
+    ("www.gstatic.com", "Google Static"),
+    ("ajax.googleapis.com", "Google AJAX"),
+    ("storage.googleapis.com", "Google Storage"),
+    ("fonts.gstatic.com", "Google Fonts"),
+    ("fonts.googleapis.com", "Google Fonts API"),
+    ("www.google.com", "Google"),
+]
+
+HELP = (
+    "RealityGhost PRO bot\n"
+    "/status - server status\n"
+    "/list - list users\n"
+    "/add <name> [days] [mb] - add a user\n"
+    "/del <id> - remove a user\n"
+    "/info <id> - show a user's configs\n"
+)
+
+API = "https://api.telegram.org/bot{token}/{method}"
+
+
+def log(msg):
+    print("[rg-bot] {}".format(msg), flush=True)
+
+
+def load_bot_config():
+    try:
+        with open(BOT_CONFIG) as f:
+            return json.load(f)
+    except Exception:
+        return {"enabled": False, "token": "", "domain": "", "admin_ids": []}
+
+
+def save_bot_config(cfg):
+    os.makedirs(BOT_DIR, exist_ok=True)
+    with open(BOT_CONFIG, "w") as f:
+        json.dump(cfg, f, indent=2)
+
+
+def db():
+    os.makedirs(BOT_DIR, exist_ok=True)
+    conn = sqlite3.connect(USERS_DB)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS users("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "name TEXT NOT NULL,"
+        "uuid TEXT NOT NULL UNIQUE,"
+        "created TEXT NOT NULL,"
+        "days INTEGER DEFAULT 0,"
+        "limit_mb INTEGER DEFAULT 0)"
+    )
+    conn.commit()
+    return conn
+
+
+def load_xray():
+    with open(XRAY_CONFIG) as f:
+        return json.load(f)
+
+
+def save_xray(cfg):
+    tmp = XRAY_CONFIG + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(cfg, f, indent=2)
+    os.replace(tmp, XRAY_CONFIG)
+    try:
+        os.chmod(XRAY_CONFIG, 0o600)
+    except Exception:
+        pass
+
+
+def restart_xray():
+    subprocess.run(["systemctl", "restart", "xray"], check=False)
+
+
+def get_domain():
+    cfg = load_bot_config()
+    if cfg.get("domain"):
+        return cfg["domain"]
+    try:
+        xc = load_xray()
+        email = xc["inbounds"][0]["settings"]["clients"][0].get("email", "")
+        return email.split("@", 1)[1] if "@" in email else ""
+    except Exception:
+        return ""
+
+
+def get_public_key():
+    try:
+        xc = load_xray()
+        priv = xc["inbounds"][0]["streamSettings"]["realitySettings"]["privateKey"]
+        out = subprocess.run(
+            [XRAY_BIN, "x25519", "-i", priv],
+            capture_output=True, text=True,
+        ).stdout
+        for line in out.splitlines():
+            for tag in ("Password:", "PublicKey:", "Public key:"):
+                if tag in line:
+                    return line.split(tag, 1)[1].strip()
+    except Exception as exc:
+        log("pubkey error: {}".format(exc))
+    return ""
+
+
+def user_links(user_uuid):
+    xc = load_xray()
+    rs = xc["inbounds"][0]["streamSettings"]["realitySettings"]
+    sids = rs.get("shortIds", ["0000000000000000"]) or ["0000000000000000"]
+    pbk = get_public_key()
+    domain = get_domain()
+    links = []
+    for i, (sni, label) in enumerate(SNI_LIST):
+        sid = sids[i] if i < len(sids) else sids[0]
+        tag = urllib.parse.quote("RG {}".format(label))
+        links.append(
+            "vless://{uuid}@{domain}:443?flow=xtls-rprx-vision&encryption=none"
+            "&security=reality&sni={sni}&fp=chrome&pbk={pbk}&sid={sid}"
+            "&spx=%2F&type=tcp&headerType=none#{tag}".format(
+                uuid=user_uuid, domain=domain, sni=sni, pbk=pbk, sid=sid, tag=tag
+            )
+        )
+    return links
+
+
+def cmd_init():
+    os.makedirs(BOT_DIR, exist_ok=True)
+    db().close()
+    if not os.path.exists(BOT_CONFIG):
+        save_bot_config({"enabled": False, "token": "", "domain": get_domain(), "admin_ids": []})
+    log("initialized")
+
+
+def add_user(name, limit_mb=0, days=0):
+    name = (name or "user").strip() or "user"
+    new_uuid = str(uuidlib.uuid4())
+    xc = load_xray()
+    clients = xc["inbounds"][0]["settings"]["clients"]
+    domain = get_domain()
+    clients.append({
+        "id": new_uuid,
+        "flow": "xtls-rprx-vision",
+        "level": 0,
+        "email": "{}-{}@{}".format(name, new_uuid[:8], domain or "local"),
+    })
+    save_xray(xc)
+    restart_xray()
+    conn = db()
+    conn.execute(
+        "INSERT INTO users(name,uuid,created,days,limit_mb) VALUES(?,?,?,?,?)",
+        (name, new_uuid, datetime.datetime.utcnow().isoformat(), int(days or 0), int(limit_mb or 0)),
+    )
+    conn.commit()
+    uid = conn.execute("SELECT id FROM users WHERE uuid=?", (new_uuid,)).fetchone()[0]
+    conn.close()
+    return uid, new_uuid
+
+
+def del_user(ident):
+    conn = db()
+    row = conn.execute(
+        "SELECT id,uuid FROM users WHERE id=? OR uuid=?", (ident, ident)
+    ).fetchone()
+    if not row:
+        conn.close()
+        return False
+    uid, user_uuid = row
+    conn.execute("DELETE FROM users WHERE id=?", (uid,))
+    conn.commit()
+    conn.close()
+    xc = load_xray()
+    clients = xc["inbounds"][0]["settings"]["clients"]
+    xc["inbounds"][0]["settings"]["clients"] = [c for c in clients if c.get("id") != user_uuid]
+    save_xray(xc)
+    restart_xray()
+    return True
+
+
+def list_users():
+    conn = db()
+    rows = conn.execute(
+        "SELECT id,name,uuid,created,days,limit_mb FROM users ORDER BY id"
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def is_expired(row):
+    created, days = row[3], row[4]
+    if not days:
+        return False
+    try:
+        start = datetime.datetime.fromisoformat(created)
+    except Exception:
+        return False
+    return datetime.datetime.utcnow() > start + datetime.timedelta(days=int(days))
+
+
+def cmd_enforce():
+    removed = 0
+    for row in list_users():
+        if is_expired(row):
+            if del_user(row[0]):
+                removed += 1
+    log("enforce removed {} expired user(s)".format(removed))
+
+
+def server_status():
+    def sc(cmd):
+        try:
+            return subprocess.run(cmd, capture_output=True, text=True).stdout.strip()
+        except Exception:
+            return "?"
+    nginx = sc(["systemctl", "is-active", "nginx"])
+    xray = sc(["systemctl", "is-active", "xray"])
+    users = len(list_users())
+    return "Domain: {}\nnginx: {}\nxray: {}\nusers: {}".format(
+        get_domain(), nginx, xray, users
+    )
+
+
+def tg(token, method, **params):
+    import requests
+    try:
+        resp = requests.post(API.format(token=token, method=method), json=params, timeout=65)
+        return resp.json()
+    except Exception as exc:
+        log("tg error: {}".format(exc))
+        return {}
+
+
+def handle(cfg, token, msg):
+    chat = msg["chat"]["id"]
+    frm = msg.get("from", {}).get("id")
+    text = (msg.get("text") or "").strip()
+    if not text:
+        return
+    # The first person to message the bot becomes the admin.
+    if not cfg.get("admin_ids"):
+        cfg["admin_ids"] = [frm]
+        save_bot_config(cfg)
+        tg(token, "sendMessage", chat_id=chat, text="You are now the bot admin.")
+    if frm not in cfg.get("admin_ids", []):
+        tg(token, "sendMessage", chat_id=chat, text="Not authorized.")
+        return
+    parts = text.split()
+    cmd = parts[0].lower().lstrip("/").split("@")[0]
+    args = parts[1:]
+    if cmd in ("start", "help"):
+        tg(token, "sendMessage", chat_id=chat, text=HELP)
+    elif cmd == "status":
+        tg(token, "sendMessage", chat_id=chat, text=server_status())
+    elif cmd == "list":
+        rows = list_users()
+        if not rows:
+            tg(token, "sendMessage", chat_id=chat, text="No users yet. /add <name> [days] [mb]")
+        else:
+            lines = [
+                "#{} {} - {} (days: {})".format(r[0], r[1], r[2][:8], r[4] or "unlimited")
+                for r in rows
+            ]
+            tg(token, "sendMessage", chat_id=chat, text="\n".join(lines))
+    elif cmd == "add":
+        if not args:
+            tg(token, "sendMessage", chat_id=chat, text="Usage: /add <name> [days] [mb]")
+            return
+        name = args[0]
+        days = int(args[1]) if len(args) > 1 and args[1].isdigit() else 0
+        mb = int(args[2]) if len(args) > 2 and args[2].isdigit() else 0
+        uid, user_uuid = add_user(name, mb, days)
+        links = "\n".join(user_links(user_uuid))
+        tg(token, "sendMessage", chat_id=chat,
+           text="Added #{} {}\nUUID: {}\n\n{}".format(uid, name, user_uuid, links))
+    elif cmd in ("del", "delete", "rm"):
+        if not args:
+            tg(token, "sendMessage", chat_id=chat, text="Usage: /del <id>")
+            return
+        ok = del_user(args[0])
+        tg(token, "sendMessage", chat_id=chat, text="Deleted." if ok else "Not found.")
+    elif cmd in ("info", "sub"):
+        if not args:
+            tg(token, "sendMessage", chat_id=chat, text="Usage: /info <id>")
+            return
+        conn = db()
+        row = conn.execute(
+            "SELECT id,name,uuid FROM users WHERE id=? OR uuid=?", (args[0], args[0])
+        ).fetchone()
+        conn.close()
+        if not row:
+            tg(token, "sendMessage", chat_id=chat, text="Not found.")
+            return
+        links = "\n".join(user_links(row[2]))
+        tg(token, "sendMessage", chat_id=chat,
+           text="#{} {}\nUUID: {}\n\n{}".format(row[0], row[1], row[2], links))
+    else:
+        tg(token, "sendMessage", chat_id=chat, text="Unknown command. /help")
+
+
+def run_bot():
+    import requests
+    cfg = load_bot_config()
+    token = cfg.get("token", "")
+    if not token:
+        log("no token configured")
+        sys.exit(1)
+    log("bot polling started")
+    offset = None
+    while True:
+        try:
+            params = {"timeout": 60}
+            if offset is not None:
+                params["offset"] = offset
+            resp = requests.get(
+                API.format(token=token, method="getUpdates"), params=params, timeout=65
+            )
+            data = resp.json()
+            for upd in data.get("result", []):
+                offset = upd["update_id"] + 1
+                cfg = load_bot_config()
+                msg = upd.get("message") or upd.get("edited_message")
+                if msg:
+                    handle(cfg, token, msg)
+        except Exception as exc:
+            log("loop error: {}".format(exc))
+            time.sleep(5)
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("usage: rg-bot.py {init|adduser|deluser|list|stats|enforce|runbot}")
+        return
+    cmd = sys.argv[1]
+    if cmd == "init":
+        cmd_init()
+    elif cmd == "adduser":
+        name = sys.argv[2] if len(sys.argv) > 2 else "user"
+        mb = sys.argv[3] if len(sys.argv) > 3 else "0"
+        days = sys.argv[4] if len(sys.argv) > 4 else "0"
+        uid, user_uuid = add_user(name, mb, days)
+        print("Added user #{} ({}) uuid={}".format(uid, name, user_uuid))
+        for link in user_links(user_uuid):
+            print(link)
+    elif cmd == "deluser":
+        if len(sys.argv) < 3:
+            print("need id")
+            return
+        print("deleted" if del_user(sys.argv[2]) else "not found")
+    elif cmd == "list":
+        for r in list_users():
+            print("#{} {} {} days={} mb={}".format(r[0], r[1], r[2], r[4] or 0, r[5] or 0))
+    elif cmd == "stats":
+        print(server_status())
+    elif cmd == "enforce":
+        cmd_enforce()
+    elif cmd == "runbot":
+        run_bot()
+    else:
+        print("unknown: {}".format(cmd))
+
+
+if __name__ == "__main__":
+    main()
+RGBOTEOF
+  chmod +x /usr/local/bin/rg-bot.py
+  /usr/local/bin/rg-bot.py init 2>/dev/null || true
+  echo "0 * * * * root /usr/local/bin/rg-bot.py enforce >/dev/null 2>&1" > /etc/cron.d/realityghost-bot-enforce
+  echo -e "${OK}Bot manager installed (configure it via: manage -> Bot)"
+}
+
 
 main_install() {
   echo ""
@@ -876,6 +1517,7 @@ main_install() {
   build_subscription
   build_panel
   install_monitor
+  install_bot_script
   setup_rotation
   for p in 443 80 8443; do
     iptables -C INPUT -p tcp --dport "$p" -j ACCEPT 2>/dev/null || iptables -A INPUT -p tcp --dport "$p" -j ACCEPT
@@ -985,10 +1627,10 @@ health_check() {
     fi
   done
   # Check panel
-  if curl -sk --max-time 3 "https://127.0.0.1:8443/status/" > /dev/null 2>&1; then
-    echo -e "  ${GREEN}✓${NC} Panel (8443)"
+  if curl -sk --max-time 3 "https://127.0.0.1:8444/status/" > /dev/null 2>&1; then
+    echo -e "  ${GREEN}✓${NC} Panel (8444)"
   else
-    echo -e "  ${RED}✗${NC} Panel (8443)"
+    echo -e "  ${RED}✗${NC} Panel (8444)"
     issues=$((issues+1))
   fi
   # Check 443
