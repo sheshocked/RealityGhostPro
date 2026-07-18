@@ -413,146 +413,136 @@ build_panel() {
     idx=$((idx+1))
   done
   mkdir -p "$STATUS_DIR"
-  cat > "$STATUS_DIR/index.html" <<HTMLEOF
-<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>RG PRO · Dashboard</title>
+  cat > "$STATUS_DIR/index.html" <<'PANEOF'
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>RG PRO · Dashboard</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-:root{--b:#14141f;--s:#1a1a2e;--s2:#22223a;--br:rgba(130,140,255,0.07);--t:#d0d0e8;--t2:#7878a8;--p:#7c5cfc;--p2:#9775ff;--g:#00d68f;--y:#f0a030;--r:#f05060;--bl:#4a9eff;--rad:14px;--rs:9px}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+:root{--b:#0f0f1a;--s:#15152a;--s2:#1e1e38;--br:rgba(130,140,255,0.06);--t:#e0e0f0;--t2:#6a6a9a;--p:#7c5cfc;--p2:#9a7cff;--g:#00d68f;--g2:#00b87a;--y:#f0a030;--r:#f05060;--bl:#4a9eff;--rad:16px;--rs:10px;--trans:all .2s ease}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',system-ui,sans-serif;background:var(--b);color:var(--t)}
-.w{max-width:1440px;margin:0 auto;padding:20px}
-.hd{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px 20px;background:var(--s);border:1px solid var(--br);border-radius:var(--rad);margin-bottom:18px}
-.hd-l{display:flex;align-items:center;gap:12px}.hd-l h1{font-size:18px;font-weight:800}.hd-l span{color:var(--p2)}
-.hd-l small{font-size:11px;background:rgba(124,92,252,0.1);padding:3px 8px;border-radius:100px;color:var(--p2)}
-.hd-r{display:flex;align-items:center;gap:8px}
-.stt{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:100px;font-size:11px;font-weight:600;background:rgba(0,214,143,0.08);color:var(--g);border:1px solid rgba(0,214,143,0.12)}
-.stt.r{background:rgba(240,80,96,0.08);color:var(--r);border-color:rgba(240,80,96,0.12)}
-.dot{width:5px;height:5px;border-radius:50%;background:var(--g);animation:pl 1.8s infinite}.dot.r{background:var(--r)}
-@keyframes pl{0%,100%{opacity:1}50%{opacity:0.2}}
-.g{display:grid;gap:16px;margin-bottom:16px}
-.gx{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
-.g2{grid-template-columns:1.5fr 1fr}
-.g3{grid-template-columns:1fr 1fr 1fr}
-.g4{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
-.cd{background:var(--s);border:1px solid var(--br);border-radius:var(--rad);padding:14px 16px}
-.cd-l{font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:3px}
-.cd-v{font-size:20px;font-weight:800;letter-spacing:-.3px;display:flex;align-items:baseline;gap:4px}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--b);color:var(--t);min-height:100vh}
+.w{max-width:1440px;margin:0 auto;padding:24px 20px}
+.hd{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:18px 22px;background:var(--s);border:1px solid var(--br);border-radius:var(--rad);margin-bottom:20px}
+.hd-l{display:flex;align-items:center;gap:14px}
+.hd-l h1{font-size:20px;font-weight:900;letter-spacing:-.5px}
+.hd-l h1 span{background:linear-gradient(135deg,var(--p),var(--p2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hd-l small{font-size:11px;background:linear-gradient(135deg,rgba(124,92,252,0.15),rgba(154,124,255,0.05));padding:4px 10px;border-radius:100px;color:var(--p2);font-weight:600}
+.stt{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;font-size:11px;font-weight:600;background:rgba(0,214,143,0.07);color:var(--g);border:1px solid rgba(0,214,143,0.1)}
+.stt.r{background:rgba(240,80,96,0.07);color:var(--r);border-color:rgba(240,80,96,0.1)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:pl 1.5s ease infinite}.dot.r{background:var(--r)}
+@keyframes pl{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.g{display:grid;gap:18px;margin-bottom:18px}
+.g-stats{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.g-main{grid-template-columns:1.5fr 1fr}
+.g-quick{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.cd{background:var(--s);border:1px solid var(--br);border-radius:var(--rad);padding:16px 18px;transition:var(--trans)}
+.cd:hover{border-color:rgba(130,140,255,0.12)}
+.cd-l{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:5px}
+.cd-v{font-size:22px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:baseline;gap:5px}
 .cd-v small{font-size:11px;font-weight:500;color:var(--t2)}
-.cd-v.xs{font-size:15px}
-.sec{background:var(--s);border:1px solid var(--br);border-radius:var(--rad);padding:18px}
-.sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(130,140,255,0.04)}
-.sec-h h2{font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px}
-.bc{height:5px;border-radius:100px;background:rgba(255,255,255,0.04);overflow:hidden;margin-top:5px}
-.bf{height:100%;border-radius:100px;transition:width 1s}
-.p{background:linear-gradient(90deg,#5a3fd4,#7c5cfc)}.gr{background:linear-gradient(90deg,#00b87a,#00d68f)}.yl{background:linear-gradient(90deg,#d49020,#f0a030)}.or{background:linear-gradient(90deg,#e07020,#ff8c42)}
-.rs{display:flex;flex-direction:column;gap:10px}
-.rl{display:flex;justify-content:space-between;font-size:11px;color:var(--t2);margin-bottom:3px}.rl b{color:var(--t);font-weight:600}
-.tg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.ti{text-align:center;padding:10px;border-radius:var(--rs);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
-.ti-v{font-size:16px;font-weight:700;direction:ltr}.ti-l{font-size:10px;color:var(--t2);margin-top:2px}
-.sv{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.svc{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:6px;background:rgba(255,255,255,0.02);font-size:11px;font-weight:600;border:1px solid rgba(255,255,255,0.05)}
-.svc.o{color:var(--g);border-color:rgba(0,214,143,0.12)}.svc.x{color:var(--t2)}
-.cl{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.ci{display:flex;align-items:center;gap:6px;padding:7px 9px;border-radius:5px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:all .1s}
-.ci:hover{background:rgba(124,92,252,0.06);border-color:rgba(124,92,252,0.12)}
-.ci-l{flex:1;min-width:0}.ci-l strong{display:block;font-size:10px;font-weight:600}
+.cd-v.xs{font-size:16px}
+.sec{background:var(--s);border:1px solid var(--br);border-radius:var(--rad);padding:20px;transition:var(--trans)}
+.sec:hover{border-color:rgba(130,140,255,0.1)}
+.sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(130,140,255,0.04)}
+.sec-h h2{font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px;color:var(--t)}
+.bc{height:6px;border-radius:100px;background:rgba(255,255,255,0.03);overflow:hidden;margin-top:6px}
+.bf{height:100%;border-radius:100px;transition:width 1.2s cubic-bezier(.22,1,.36,1)}
+.p{background:linear-gradient(90deg,#5a3fd4,#7c5cfc)}.gr{background:linear-gradient(90deg,#00b87a,#00d68f)}.yl{background:linear-gradient(90deg,#d49020,#f0a030)}
+.rs{display:flex;flex-direction:column;gap:12px}
+.rl{display:flex;justify-content:space-between;font-size:11px;color:var(--t2);margin-bottom:4px}.rl b{color:var(--t);font-weight:600}
+.tg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ti{text-align:center;padding:12px 8px;border-radius:var(--rs);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);transition:var(--trans)}
+.ti:hover{background:rgba(124,92,252,0.04);border-color:rgba(124,92,252,0.08)}
+.ti-v{font-size:18px;font-weight:700;direction:ltr}
+.ti-l{font-size:10px;color:var(--t2);margin-top:3px;font-weight:500}
+.lg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.lgi{text-align:center;padding:12px 8px;border-radius:var(--rs);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
+.lgi-v{font-size:17px;font-weight:700}
+.lgi-l{font-size:10px;color:var(--t2);margin-top:3px}
+.sv{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.svc{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:var(--rs);background:rgba(255,255,255,0.02);font-size:11px;font-weight:600;border:1px solid rgba(255,255,255,0.05);transition:var(--trans)}
+.svc.o{color:var(--g);border-color:rgba(0,214,143,0.1);background:rgba(0,214,143,0.03)}
+.svc.x{color:var(--t2)}
+.cl{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px}
+.ci{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--rs);background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:var(--trans)}
+.ci:hover{background:rgba(124,92,252,0.06);border-color:rgba(124,92,252,0.1);transform:translateY(-1px)}
+.ci-l{flex:1;min-width:0}
+.ci-l strong{display:block;font-size:10px;font-weight:600}
 .ci-s{font-size:8px;color:var(--p2);direction:ltr;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ci-b{font-size:7px;padding:3px 5px;border-radius:3px;background:rgba(255,255,255,0.05);border:none;cursor:pointer;color:var(--t2)}
-.lg{display:flex;gap:6px}
-.lgi{flex:1;text-align:center;padding:10px;border-radius:var(--rs);background:rgba(255,255,255,0.02)}
-.lgi-v{font-size:16px;font-weight:700}.lgi-l{font-size:10px;color:var(--t2);margin-top:2px}
-.ch{display:flex;gap:6px;flex-wrap:wrap}
-.chp{padding:5px 10px;border-radius:100px;font-size:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);cursor:pointer}
-.chp:hover{background:rgba(124,92,252,0.08);border-color:rgba(124,92,252,0.15)}
-.ir{display:flex;flex-direction:column;gap:8px}
-.irow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:11px}
+.ci-b{font-size:7px;padding:3px 6px;border-radius:4px;background:rgba(255,255,255,0.05);border:none;cursor:pointer;color:var(--t2);transition:var(--trans)}
+.ci-b:hover{background:rgba(124,92,252,0.15);color:var(--p)}
+.ir{display:flex;flex-direction:column;gap:10px}
+.irow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:11px}
 .irow:not(:last-child){border-bottom:1px solid rgba(130,140,255,0.03)}
 .irow-l{color:var(--t2)}.irow-v{font-weight:500;direction:ltr;font-size:11px;text-align:left;word-break:break-all}
+.ch{display:flex;gap:6px;flex-wrap:wrap}
+.chp{padding:6px 12px;border-radius:100px;font-size:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:var(--trans)}
+.chp:hover{background:rgba(124,92,252,0.08);border-color:rgba(124,92,252,0.15);color:var(--p2)}
 .qa{display:flex;gap:8px;flex-wrap:wrap}
-.qab{padding:6px 12px;border-radius:var(--rs);font-size:11px;font-weight:600;border:1px solid rgba(124,92,252,0.15);background:rgba(124,92,252,0.06);color:var(--p2);cursor:pointer}
-.ft{padding:16px;text-align:center;font-size:10px;color:var(--t2);border-top:1px solid rgba(255,255,255,0.02);margin-top:16px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
-.ft a{color:var(--p2);text-decoration:none}
-.ts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:rgba(26,26,46,0.96);border:1px solid rgba(0,214,143,0.2);border-radius:var(--rs);padding:8px 16px;font-size:10px;color:var(--g);opacity:0;transition:all .3s;z-index:999}
+.qab{padding:7px 14px;border-radius:var(--rs);font-size:11px;font-weight:600;border:1px solid rgba(124,92,252,0.15);background:rgba(124,92,252,0.06);color:var(--p2);cursor:pointer;transition:var(--trans)}
+.qab:hover{background:rgba(124,92,252,0.12);border-color:rgba(124,92,252,0.25);transform:translateY(-1px)}
+.ft{padding:18px;text-align:center;font-size:10px;color:var(--t2);border-top:1px solid rgba(255,255,255,0.02);margin-top:18px;display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+.ft a{color:var(--p2);text-decoration:none;transition:var(--trans)}
+.ft a:hover{color:var(--p)}
+.ts{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(21,21,42,0.96);border:1px solid rgba(0,214,143,0.2);border-radius:var(--rs);padding:10px 20px;font-size:11px;color:var(--g);opacity:0;transition:all .35s cubic-bezier(.22,1,.36,1);z-index:999;pointer-events:none;backdrop-filter:blur(10px)}
 .ts.s{opacity:1;transform:translateX(-50%) translateY(0)}
-@media(max-width:1024px){.g2{grid-template-columns:1fr}.g3{grid-template-columns:1fr 1fr}}
-@media(max-width:700px){.g3{grid-template-columns:1fr}.gx{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:450px){.gx{grid-template-columns:1fr}.w{padding:8px}}
-</style></head><body>
+@media(max-width:1024px){.g-main{grid-template-columns:1fr}.w{padding:20px 16px}}
+@media(max-width:700px){.g-stats{grid-template-columns:repeat(2,1fr)}.hd-l h1{font-size:17px}.hd{padding:14px 16px}.sec{padding:16px}.cl{grid-template-columns:1fr}}
+@media(max-width:480px){.g-stats{grid-template-columns:1fr}.w{padding:12px 10px}.hd-l h1{font-size:15px}.hd-l small{display:none}.tg{grid-template-columns:repeat(3,1fr)}.sv{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
 <div class=w>
 <div class=hd><div class=hd-l><h1>👻 RG <span>PRO</span></h1></div><div class=hd-r><span class=stt id=stb><span class=dot id=std></span><span id=stl>Online</span></span></div></div>
-
-<div class="g gx" id=rw1></div>
-
-<div class="g g3">
-<div class=sec><div class=sec-h><h2>🖥 System</h2><span id=upt style=font-size:10px;color:var(--t2)>—</span></div>
-<div class=rs id=sys_rs></div></div>
-
-<div class=sec><div class=sec-h><h2>📊 Traffic</h2></div>
-<div class=tg><div><div class=ti-v id=td>—</div><div class=ti-l>Today</div></div><div><div class=ti-v id=mo>—</div><div class=ti-l>Month</div></div><div><div class=ti-v id=tot>—</div><div class=ti-l>Total</div></div></div>
-<div class=sec-h style=margin:12px 0 6px><h2>🌐 Load</h2></div>
-<div class=lg><div class=lgi><div class=lgi-v id=l1>—</div><div class=lgi-l>1m</div></div><div class=lgi><div class=lgi-v id=l5>—</div><div class=lgi-l>5m</div></div><div class=lgi><div class=lgi-v id=l15>—</div><div class=lgi-l>15m</div></div></div>
+<div class="g g-stats" id=rw1></div>
+<div class="g g-main">
+<div>
+<div class=sec style=margin-bottom:18px><div class=sec-h><h2>🖥 System</h2><span id=upt style=font-size:10px;color:var(--t2)>—</span></div><div class=rs id=sys_rs></div></div>
+<div class=sec><div class=sec-h><h2>🔗 Configs</h2><button class=ci-b onclick=cpA() style=padding:2px 8px;font-size:9px>📋 All</button></div><div class=cl id=cf></div></div>
 </div>
-
-<div class=sec><div class=sec-h><h2>📡 Server</h2></div>
-<div class=ir id=srv_ir></div></div>
+<div>
+<div class=sec><div class=sec-h><h2>🔧 Services</h2><span style=font-size:9px;color:var(--t2) id=svc></span></div><div class=sv id=sv></div>
+<div class=sec-h style=margin:14px 0 6px><h2>📄 Sub</h2></div><div style=display:flex;gap:4px><input readonly id=su value=— style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:7px 10px;color:var(--t2);font-size:10px;direction:ltr;font-family:monospace" onclick=this.select()><button class=ci-b onclick="navigator.clipboard.writeText(document.getElementById('su').value);to('✓ Copied')">📋</button></div>
+<div class=sec-h style=margin:14px 0 6px><h2>⚡ Actions</h2></div><div class=qa><span class=qab onclick=cpA()>📋 Copy All</span><span class=qab onclick=window.open('https://'+D+'/sub')>📥 Sub</span><span class=qab onclick=window.location.reload()>🔄 Refresh</span></div>
 </div>
-
-<div class="g g2">
-<div><div class=sec style=margin-bottom:10px><div class=sec-h><h2>🔗 Configs</h2><button class=ci-b onclick=cpA() style=padding:2px6px>📋 All</button></div>
-<div class=cl id=cf></div></div>
-<div class=sec><div class=sec-h><h2>📄 Sub</h2></div>
-<div style=display:flex;gap:4px><input readonly id=su value="—" style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:5px;padding:6px 8px;color:var(--t2);font-size:9px;direction:ltr;font-family:monospace" onclick=this.select()><button class=ci-b onclick="navigator.clipboard.writeText(document.getElementById('su').value);to('✓ Copied')">Copy</button></div>
-</div></div>
-
-<div class=sec><div class=sec-h><h2>🔧 Services</h2><span style=font-size:9px;color:var(--t2) id=svc></span></div>
-<div class=sv id=sv></div>
-<div class=sec-h style=margin:12px 0 6px><h2>⚡ Actions</h2></div>
-<div class=qa><span class=qab onclick=cpA()>📋 Copy All</span><span class=qab onclick=window.open('https://'+D+'/sub')>📥 Sub</span><span class=qab onclick=window.location.reload()>🔄 Refresh</span></div>
 </div>
-
-<div class="g g4">
-<div class=sec><div class=sec-h><h2>🏷️ Links</h2></div>
-<div class=ch id=qa></div></div>
-<div class=sec><div class=sec-h><h2>💾 Storage</h2></div>
-<div class=ir id=sto_ir></div></div>
-<div class=sec><div class=sec-h><h2>🌍 Network</h2></div>
-<div class=ir id=net_ir></div></div>
+<div class="g g-quick">
+<div class=sec><div class=sec-h><h2>📊 Traffic</h2></div><div class=tg><div><div class=ti-v id=td>—</div><div class=ti-l>Today</div></div><div><div class=ti-v id=mo>—</div><div class=ti-l>Month</div></div><div><div class=ti-v id=tot>—</div><div class=ti-l>Total</div></div></div>
+<div class=sec-h style=margin:14px 0 8px><h2>🌐 Load</h2></div><div class=lg><div class=lgi><div class=lgi-v id=l1>—</div><div class=lgi-l>1 min</div></div><div class=lgi><div class=lgi-v id=l5>—</div><div class=lgi-l>5 min</div></div><div class=lgi><div class=lgi-v id=l15>—</div><div class=lgi-l>15 min</div></div></div></div>
+<div class=sec><div class=sec-h><h2>📡 Server</h2></div><div class=ir id=srv_ir></div></div>
+<div class=sec><div class=sec-h><h2>🏷️ Quick Links</h2></div><div class=ch id=qa></div></div>
 </div>
-
-<footer class=ft><span>👻 RG PRO</span><span>🔗 <a href=https://github.com/sheshocked/RealityGhostPro target=_blank>GitHub</a></span><span>⚡ <span id=ftr>—</span></span></footer></div>
-<div class=ts id=t></div>
-
+<footer class=ft><span>👻 RG PRO</span><span>🔗 <a href=https://github.com/sheshocked/RealityGhostPro target=_blank>GitHub</a></span><span>⚡ <span id=ftr>—</span></span></footer>
+</div>
+<div class=ts id=ts></div>
 <script>
 var D='${DOMAIN}',U='${uuid}',P='${pubkey_line}';
 var CS=[{s:'www.gstatic.com',l:'Google Static',e:'🟢',i:'6c17063bbbc2815f'},{s:'ajax.googleapis.com',l:'Google AJAX',e:'🟣',i:'45b782b0ab099836'},{s:'storage.googleapis.com',l:'Google Storage',e:'🟠',i:'2a24f880f00bd81c'},{s:'fonts.gstatic.com',l:'Google Fonts',e:'🔴',i:'5e477f536f9d3d13'},{s:'fonts.googleapis.com',l:'Google Fonts API',e:'🟤',i:'faf18e55b6abd0e5'},{s:'www.google.com',l:'Google',e:'🔵',i:'f3eb44acd99a0125'}];
 function lk(c){return 'vless://'+U+'@'+D+':443?encryption=none&flow=xtls-rprx-vision&security=reality&fp=chrome&type=tcp&headerType=none&sni='+c.s+'&pbk='+P+'&sid='+c.i+'#'+encodeURIComponent(c.l)}
-function to(m){var t=document.getElementById('t');t.textContent=m;t.classList.add('s');setTimeout(function(){t.classList.remove('s')},1400)}
-function cp(s){var c=CS.find(function(x){return x.s===s});if(!c)return;navigator.clipboard.writeText(lk(c)).then(function(){to('✓ '+c.l)})||to('👆 Manual')}
-function cpA(){var a=CS.map(function(x){return lk(x)}).join('\n')+'\nhttps://'+D+'/sub';navigator.clipboard.writeText(a).then(function(){to('✓ All copied')})||to('👆 Manual')}
-function bd(){var h=document.getElementById('cf');h.innerHTML='';CS.forEach(function(c){var e=document.createElement('div');e.className='ci';e.onclick=function(){cp(c.s)};e.innerHTML='<div class=ci-l><strong>'+c.e+' '+c.l+'</strong><span class=ci-s>'+c.s+'</span></div><button class=ci-b onclick="event.stopPropagation();cp(\''+c.s+'\')">Copy</button>';h.appendChild(e)});var q=document.getElementById('qa');q.innerHTML='';CS.forEach(function(c){var e=document.createElement('span');e.className='chp';e.textContent=c.e+' '+c.l;e.onclick=function(){cp(c.s)};q.appendChild(e)});document.getElementById('su').value='https://'+D+'/sub'}
-function fmt(b){if(!b||b==0)return'0 B';var u=['B','KB','MB','GB','TB'];var i=0;var n=Number(b);while(n>=1024&&i<u.length-1){n/=1024;i++}return n.toFixed(i==0?0:1)+' '+u[i]}
-function fd(){var x=new XMLHttpRequest();x.open('GET','/status/stats.json?t='+Date.now(),true);x.timeout=5000;x.onload=function(){if(x.status!==200)return;try{var d=JSON.parse(x.responseText);
-var r1=document.getElementById('rw1');r1.innerHTML='<div class=cd><div class=cd-l>🧠 RAM</div><div class=cd-v>'+d.ram.used+'<small>/'+d.ram.total+'MB</small></div></div><div class=cd><div class=cd-l>⚡ CPU</div><div class=cd-v>'+d.cpu+'<small>%</small></div></div><div class=cd><div class=cd-l>💾 Disk</div><div class=cd-v>'+d.disk.used+'<small>/'+d.disk.total+'</small></div></div><div class=cd><div class=cd-l>🔗 Connections</div><div class=cd-v>'+(d.connections||0)+'</div></div><div class=cd><div class=cd-l>🌐 Load 1m</div><div class=cd-v class=xs>'+d.load['1m']+'</div></div><div class=cd><div class=cd-l>🚀 Xray</div><div class=cd-v class=xs>'+d.xray_version+'</div></div>';
-document.getElementById('upt').textContent='⏱ '+d.uptime;
-document.getElementById('sys_rs').innerHTML='<div class=ri><div class=rl><span>RAM</span><span id=rp>—</span></div><div class=bc><div class="bf p" id=rf style=width:0%></div></div></div><div class=ri><div class=rl><span>CPU</span><span id=cp>—</span></div><div class=bc><div class="bf gr" id=cf style=width:0%></div></div></div><div class=ri><div class=rl><span>Disk</span><span id=dp>—</span></div><div class=bc><div class="bf yl" id=df style=width:0%></div></div></div><div class=ri><div class=rl><span>SWAP</span><span id=sp>—</span></div><div class=bc><div class="bf or" id=_sf style=width:0%></div></div></div>';
-document.getElementById('rp').textContent=d.ram.usage.toFixed(0)+'%';document.getElementById('rf').style.width=Math.min(d.ram.usage,100)+'%';document.getElementById('cp').textContent=d.cpu+'%';document.getElementById('cf').style.width=Math.min(parseFloat(d.cpu)||0,100)+'%';document.getElementById('dp').textContent=d.disk.usage+'%';document.getElementById('df').style.width=Math.min(parseInt(d.disk.usage)||0,100)+'%';document.getElementById('sp').textContent='0%';document.getElementById('_sf').style.width='0%';
-document.getElementById('td').textContent=fmt(d.traffic.today);document.getElementById('mo').textContent=fmt(d.traffic.month);document.getElementById('tot').textContent=fmt(d.traffic.total);
-document.getElementById('l1').textContent=d.load['1m'];document.getElementById('l5').textContent=d.load['5m'];document.getElementById('l15').textContent=d.load['15m'];
-document.getElementById('srv_ir').innerHTML='<div class=irow><span class=irow-l>🌐 IP</span><span class=irow-v style=color:var(--p2) id=sip>—</span></div><div class=irow><span class=irow-l>🧠 OS</span><span class=irow-v id=sos>Linux</span></div><div class=irow><span class=irow-l>⚡ CPU</span><span class=irow-v id=scpu>—</span></div><div class=irow><span class=irow-l>⏱ Uptime</span><span class=irow-v style=color:var(--g) id=sut>—</span></div><div class=irow><span class=irow-l>🚀 Xray</span><span class=irow-v style=color:var(--p2) id=sxr>—</span></div><div class=irow><span class=irow-l>🕐 Updated</span><span class=irow-v id=s_upd>—</span></div>';
-document.getElementById('sut').textContent=d.uptime;document.getElementById('sxr').textContent=d.xray_version;document.getElementById('sip').textContent='${SERVER_IP}';document.getElementById('scpu').textContent='3 Cores';document.getElementById('sos').textContent='Ubuntu 24.04';
-document.getElementById('s_upd').textContent=d.timestamp.slice(11,16)+' UTC';
-var sv=document.getElementById('sv');s=d.services;sv.innerHTML='<div class="svc '+(s.nginx==='active'?'o':'x')+'">🌐 NGINX</div><div class="svc '+(s.xray==='active'?'o':'x')+'">🚀 Xray</div><div class="svc '+(s.monitor==='active'?'o':'x')+'">📡 Monitor</div><div class="svc '+(d.dns_ok?'o':'x')+'">🔒 SSL</div>';
-var ct=Object.values(s).filter(function(v){return v==='active'}).length;document.getElementById('svc').textContent=ct+'/3';
-var a=ct===3&&d.dns_ok;document.getElementById('stl').textContent=a?'Online':'⚠ Issues';document.getElementById('stb').className='stt'+(a?'':' r');document.getElementById('std').className='dot'+(a?'':' r');
-document.getElementById('sto_ir').innerHTML='<div class=irow><span class=irow-l>Total</span><span class=irow-v id=_dkt style=color:var(--g)>—</span></div><div class=irow><span class=irow-l>Used</span><span class=irow-v id=_dku>—</span></div><div class=irow><span class=irow-l>Free</span><span class=irow-v style=color:var(--g) id=_dka>—</span></div>';
-document.getElementById('_dkt').textContent=d.disk.total;document.getElementById('_dku').textContent=d.disk.used;document.getElementById('_dka').textContent=d.disk.avail;
-document.getElementById('net_ir').innerHTML='<div class=irow><span class=irow-l>IPv4</span><span class=irow-v style=color:var(--p2)>${SERVER_IP}</span></div><div class=irow><span class=irow-l>DNS</span><span class=irow-v>9.9.9.9, 9.9.9.12</span></div><div class=irow><span class=irow-l>TCP CC</span><span class=irow-v style=color:var(--g)>BBR</span></div><div class=irow><span class=irow-l>Interface</span><span class=irow-v>eth0</span></div>';
-document.getElementById('ftr').textContent='Updated '+d.timestamp.slice(11,16)+' UTC'}catch(e){}};x.send()}
-bd();fd();setInterval(fd,5000);
-</script></body></html>
-
-HTMLEOF
+function to(m){var t=document.getElementById('ts');t.textContent=m;t.classList.add('s');setTimeout(function(){t.classList.remove('s')},2000)}
+async function F(){try{var r=await fetch('./stats.json?t='+Date.now());if(!r.ok)throw Error();S=await r.json()}catch(e){S={}}}
+function u(){var e=document.getElementById('stl');e.textContent=S.online?'Online':'Offline';var d=document.getElementById('std').className;d='dot'+(S.online?'':' r');var s=document.getElementById('stb').className;s='stt'+(S.online?'':' r')}
+async function X(){await F();u();var s=document.getElementById('rw1'),d=S.disk||{},r=S.ram||{},c=S.cpu||{},l=S.load||{};s.innerHTML='';var a=[{l:S.online?'✅':'❌',n:'Status',v:S.online?'Online':'Offline',s:''},{l:'💾',n:'Disk',v:((d.used||0)/1024).toFixed(1)+(d.total?'/'+(d.total/1024).toFixed(1):'')+' GB',s:''},{l:'🧠',n:'RAM',v:r.total+' MB',s:r.usage?r.usage.toFixed(1)+'%':''},{l:'⚙️',n:'CPU',v:c.usage?c.usage.toFixed(1)+'%':'—',s:''},{l:'📊',n:'Cores',v:c.cores||'—',s:''},{l:'🔗',n:'Conn',v:S.connections||0,s:''},{l:'📌',n:'Xray',v:S.xray_version||'—',s:''}];a.forEach(function(t){s.innerHTML+='<div class=cd><div class=cd-l>'+t.l+' '+t.n+'</div><div class="cd-v '+(t.v&&t.v.length>8?'xs':'')+'">'+t.v+(t.s?'<small>'+t.s+'</small>':'')+'</div></div>'})}
+async function Y(){await F();var s=document.getElementById('sys_rs'),d=S.disk||{},r=S.ram||{},c=S.cpu||{},h='<div class=rl><span>💾 Disk</span><b>'+((d.used||0)/1024).toFixed(1)+'/'+((d.total||0)/1024).toFixed(1)+' GB</b></div><div class=bc><div class="bf p" style=width:'+(d.used&&d.total?(d.used/d.total*100).toFixed(1):0)+'%></div></div>';h+='<div class=rl><span>🧠 RAM ('+r.total+' MB)</span><b>'+((r.used||0)).toFixed(0)+' MB / '+(r.usage||0).toFixed(1)+'%</b></div><div class=bc><div class="bf gr" style=width:'+(r.usage||0)+'%></div></div>';h+='<div class=rl><span>⚙️ CPU ('+(c.cores||'—')+' cores)</span><b>'+(c.usage||0).toFixed(1)+'%</b></div><div class=bc><div class="bf yl" style=width:'+(c.usage||0)+'%></div></div>';s.innerHTML=h;document.getElementById('upt').textContent=S.uptime?'Up '+S.uptime:'—'}
+async function Z(){await F();var s=document.getElementById('sv'),c=S.services||{};s.innerHTML='';Object.keys(c).forEach(function(k){s.innerHTML+='<div class="svc '+(c[k]==='active'?'o':'x')+'"><span>'+(c[k]==='active'?'🟢':'🔴')+'</span>'+k+'</div>'})}
+async function W(){await F();document.getElementById('td').textContent=S.traffic?S.traffic.today||'—':'—';document.getElementById('mo').textContent=S.traffic?S.traffic.month||'—':'—';document.getElementById('tot').textContent=S.traffic?S.traffic.total||'—':'—'}
+async function V(){await F();var l=S.load||{};document.getElementById('l1').textContent=l.l1||'—';document.getElementById('l5').textContent=l.l5||'—';document.getElementById('l15').textContent=l.l15||'—'}
+function si(){var s=document.getElementById('srv_ir'),i=S.server||{};s.innerHTML='';Object.keys(i).forEach(function(k){s.innerHTML+='<div class=irow><span class=irow-l>'+k+'</span><span class=irow-v>'+i[k]+'</span></div>'})}
+function ql(){var s=document.getElementById('qa'),l=S.links||[];s.innerHTML='';l.forEach(function(t){s.innerHTML+='<span class=chp onclick=window.open("'+t.url+'")>'+t.label+'</span>'})}
+function cf(){var s=document.getElementById('cf');s.innerHTML='';CS.forEach(function(c,i){s.innerHTML+='<div class=ci onclick=cp('+i+') title="Click to copy"><span>'+c.e+'</span><div class=ci-l><strong>'+c.l+'</strong><div class=ci-s>'+c.s.substring(0,24)+'</div></div><span class=ci-b>📋</span></div>'})}
+function sb(){document.getElementById('su').value=S.sub||'—'}
+function cp(i){navigator.clipboard.writeText(lk(CS[i]));to('✓ Copied '+CS[i].l)}
+function cpA(){navigator.clipboard.writeText(S.sub||'');to('✓ Copied all')}
+function ft(){document.getElementById('ftr').textContent=S.xray_version?'v'+S.xray_version:'—'}
+async function ALL(){await Promise.all([X(),Y(),Z(),W(),V(),si(),ql(),cf(),sb(),ft()])}
+ALL();setInterval(ALL,3000)
+</script>
+</body></html>
+PANEOF
   chown -R www-data:www-data "$STATUS_DIR" 2>/dev/null
   echo -e "${OK}Panel built"
 }
