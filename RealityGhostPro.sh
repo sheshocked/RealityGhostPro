@@ -129,12 +129,9 @@ F2BEOF
 
 setup_panel_auth() {
   mkdir -p /etc/realityghost
-  [[ -f /etc/nginx/.rgpanel ]] && return 0
+  [[ -f /etc/realityghost/panel_auth.txt ]] && return 0
   local pw
   pw=$(openssl rand -base64 18 | tr -dc 'A-Za-z0-9' | head -c 16)
-  htpasswd -bc /etc/nginx/.rgpanel admin "$pw" >/dev/null 2>&1
-  chmod 640 /etc/nginx/.rgpanel
-  chown root:www-data /etc/nginx/.rgpanel 2>/dev/null
   printf 'user: admin\npass: %s\n' "$pw" > /etc/realityghost/panel_auth.txt
   chmod 600 /etc/realityghost/panel_auth.txt
   echo -e "${OK}Panel login created (admin / ${pw})"
@@ -315,8 +312,6 @@ http {
         ssl_certificate_key ${SSL_KEY};
         ssl_protocols TLSv1.2 TLSv1.3;
         location /status/ {
-            auth_basic "RG PRO";
-            auth_basic_user_file /etc/nginx/.rgpanel;
             alias ${STATUS_DIR}/;
             index index.html;
             try_files \$uri \$uri/ /status/index.html;
@@ -459,6 +454,11 @@ build_panel() {
   done
 
   mkdir -p "$STATUS_DIR"
+  [[ -f /etc/realityghost/panel_auth.txt ]] || setup_panel_auth
+  local PANEL_USER PANEL_PASS PANEL_HASH
+  PANEL_USER=$(grep '^user:' /etc/realityghost/panel_auth.txt 2>/dev/null | awk '{print $2}'); PANEL_USER="${PANEL_USER:-admin}"
+  PANEL_PASS=$(grep '^pass:' /etc/realityghost/panel_auth.txt 2>/dev/null | cut -d' ' -f2-)
+  PANEL_HASH=$(printf '%s' "$PANEL_PASS" | sha256sum | awk '{print $1}')
   cat > "$STATUS_DIR/index.html" <<'PANEOF'
 <!DOCTYPE html>
 <html lang="en">
@@ -789,21 +789,62 @@ async function ALL(){
 }
 ALL();setInterval(ALL,3000);
 </script>
+<style>
+#rg-login{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 800px at 50% -10%,rgba(80,90,200,.25),transparent),#080814;font-family:'Inter',system-ui,sans-serif}
+#rg-login .card{width:min(92vw,380px);padding:34px 30px;border-radius:22px;background:rgba(255,255,255,.06);backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);border:1px solid rgba(255,255,255,.12);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+#rg-login h1{margin:0 0 4px;font-size:22px;font-weight:800;color:#fff;text-align:center;letter-spacing:.5px}
+#rg-login p{margin:0 0 22px;font-size:13px;color:#9aa4c4;text-align:center}
+#rg-login label{display:block;font-size:12px;color:#9aa4c4;margin:14px 0 6px;font-weight:600}
+#rg-login input{width:100%;box-sizing:border-box;padding:13px 15px;border-radius:13px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#fff;font-size:15px;outline:none;transition:.2s}
+#rg-login input:focus{border-color:rgba(120,140,255,.7);background:rgba(255,255,255,.09)}
+#rg-login button{width:100%;margin-top:22px;padding:14px;border:0;border-radius:13px;cursor:pointer;font-size:15px;font-weight:700;color:#fff;background:linear-gradient(135deg,#5b6cff,#7d3cff);transition:.2s;box-shadow:0 10px 30px rgba(91,108,255,.35)}
+#rg-login button:hover{filter:brightness(1.1);transform:translateY(-1px)}
+#rg-login .err{margin-top:14px;font-size:13px;color:#ff7a90;text-align:center;min-height:18px}
+#rg-login .logo{font-size:34px;text-align:center;margin-bottom:8px}
+</style>
+<script>
+(function(){
+  var AUTH={user:"__PANEL_USER__",hash:"__PANEL_HASH__"};
+  if(sessionStorage.getItem("rg_auth")===AUTH.hash)return;
+  var o=document.createElement("div");o.id="rg-login";
+  o.innerHTML='<div class="card"><div class="logo">\ud83d\udee1\ufe0f</div><h1>RG PRO</h1><p>Sign in to your dashboard</p>'+
+    '<label>Username</label><input id="rgu" autocomplete="username" autocapitalize="none" spellcheck="false">'+
+    '<label>Password</label><input id="rgp" type="password" autocomplete="current-password">'+
+    '<button id="rgb">Login</button><div class="err" id="rge"></div></div>';
+  document.body.appendChild(o);
+  var u=o.querySelector("#rgu"),p=o.querySelector("#rgp"),b=o.querySelector("#rgb"),e=o.querySelector("#rge");
+  async function sha(t){var d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return Array.from(new Uint8Array(d)).map(function(x){return x.toString(16).padStart(2,"0")}).join("")}
+  async function go(){
+    e.textContent="";
+    try{
+      var h=await sha(p.value);
+      if(u.value.trim()===AUTH.user && h===AUTH.hash){sessionStorage.setItem("rg_auth",AUTH.hash);o.remove();}
+      else{e.textContent="Wrong username or password";p.value="";p.focus();}
+    }catch(x){e.textContent="Secure context required (use HTTPS)";}
+  }
+  b.addEventListener("click",go);
+  p.addEventListener("keydown",function(ev){if(ev.key==="Enter")go()});
+  u.addEventListener("keydown",function(ev){if(ev.key==="Enter")p.focus()});
+  setTimeout(function(){u.focus()},50);
+})();
+</script>
 </body>
 </html>
 
 PANEOF
 
   # Safely inject dynamic values (python avoids sed escaping issues with / & ')
-  python3 - "$STATUS_DIR/index.html" "$DOMAIN" "$uuid" "$pubkey_line" "$SERVER_IP" "$configs_js" <<'PYEOF'
+  python3 - "$STATUS_DIR/index.html" "$DOMAIN" "$uuid" "$pubkey_line" "$SERVER_IP" "$configs_js" "$PANEL_USER" "$PANEL_HASH" <<'PYEOF'
 import sys
-f, dom, uid, pbk, sip, cfg = sys.argv[1:7]
+f, dom, uid, pbk, sip, cfg, puser, phash = sys.argv[1:9]
 s = open(f, encoding="utf-8").read()
 s = (s.replace("${DOMAIN}", dom)
       .replace("${uuid}", uid)
       .replace("${pubkey_line}", pbk)
       .replace("${SERVER_IP}", sip)
-      .replace("/*CONFIGS*/", cfg))
+      .replace("/*CONFIGS*/", cfg)
+      .replace("__PANEL_USER__", puser)
+      .replace("__PANEL_HASH__", phash))
 open(f, "w", encoding="utf-8").write(s)
 PYEOF
 
@@ -1833,6 +1874,18 @@ main_install() {
   show_info
 }
 
+set_panel_login() {
+  mkdir -p /etc/realityghost
+  echo -ne "${BOLD}New panel username [admin]: ${NC}"; read -r pu
+  pu="${pu:-admin}"
+  echo -ne "${BOLD}New panel password: ${NC}"; read -r pp
+  if [[ -z "$pp" ]]; then echo -e "${WARN}Cancelled (empty password)${NC}"; return; fi
+  printf 'user: %s\npass: %s\n' "$pu" "$pp" > /etc/realityghost/panel_auth.txt
+  chmod 600 /etc/realityghost/panel_auth.txt
+  build_panel
+  echo -e "${OK}Panel login updated (user: ${pu})${NC}"
+}
+
 manage_menu() {
   while true; do
     clear
@@ -1862,6 +1915,7 @@ manage_menu() {
     echo "11. ⚡ Speed Test"
     echo "12. 🔧 Auto Heal"
     echo "13. 🗑️ Uninstall"
+    echo "14. 🔐 Panel Login (user/pass)"
     echo "0. Exit"
     echo -ne "${BOLD}Choice: ${NC}"; read -r opt
     case $opt in
@@ -1878,6 +1932,7 @@ manage_menu() {
       11) speed_test; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       12) auto_heal; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       13) uninstall; break ;;
+      14) set_panel_login; echo -ne "\n${YELLOW}Enter...${NC}"; read -r ;;
       0) exit 0 ;;
       *) echo -e "${WARN}Invalid${NC}"; sleep 1 ;;
     esac
