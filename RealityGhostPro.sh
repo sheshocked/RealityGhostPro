@@ -98,11 +98,46 @@ preflight_check() {
 
 install_dependencies() {
   echo -e "${INFO}Installing dependencies..."
+  export DEBIAN_FRONTEND=noninteractive
   apt-get update -y 2>/dev/null | tail -1
   apt-get install -y wget curl unzip uuid-runtime jq qrencode certbot \
-    nginx-extras logrotate bc netcat-openbsd dnsutils python3 python3-pip sqlite3 figlet 2>/dev/null | tail -1
-  pip3 install python-telegram-bot requests --break-system-packages -q 2>/dev/null || true
+    nginx-extras logrotate bc netcat-openbsd dnsutils python3 python3-pip sqlite3 figlet \
+    fail2ban apache2-utils iptables-persistent openssl 2>/dev/null | tail -1
+  pip3 install requests --break-system-packages -q 2>/dev/null || pip3 install requests -q 2>/dev/null || true
   echo -e "${OK}Dependencies installed"
+}
+
+setup_fail2ban() {
+  command -v fail2ban-server &>/dev/null || return 0
+  cat > /etc/fail2ban/jail.local <<'F2BEOF'
+[DEFAULT]
+bantime = 1h
+findtime = 10m
+maxretry = 5
+backend = systemd
+
+[sshd]
+enabled = true
+port = ssh
+maxretry = 4
+bantime = 2h
+F2BEOF
+  systemctl enable fail2ban >/dev/null 2>&1
+  systemctl restart fail2ban >/dev/null 2>&1
+  echo -e "${OK}fail2ban enabled (SSH brute-force protection)"
+}
+
+setup_panel_auth() {
+  mkdir -p /etc/realityghost
+  [[ -f /etc/nginx/.rgpanel ]] && return 0
+  local pw
+  pw=$(openssl rand -base64 18 | tr -dc 'A-Za-z0-9' | head -c 16)
+  htpasswd -bc /etc/nginx/.rgpanel admin "$pw" >/dev/null 2>&1
+  chmod 640 /etc/nginx/.rgpanel
+  chown root:www-data /etc/nginx/.rgpanel 2>/dev/null
+  printf 'user: admin\npass: %s\n' "$pw" > /etc/realityghost/panel_auth.txt
+  chmod 600 /etc/realityghost/panel_auth.txt
+  echo -e "${OK}Panel login created (admin / ${pw})"
 }
 
 system_tuning() {
@@ -280,6 +315,8 @@ http {
         ssl_certificate_key ${SSL_KEY};
         ssl_protocols TLSv1.2 TLSv1.3;
         location /status/ {
+            auth_basic "RG PRO";
+            auth_basic_user_file /etc/nginx/.rgpanel;
             alias ${STATUS_DIR}/;
             index index.html;
             try_files \$uri \$uri/ /status/index.html;
@@ -332,6 +369,9 @@ configure_xray() {
   cat <<XRAYEOF | tee "$CONFIG_DIR/config.json" > /dev/null
 {
   "log": { "loglevel": "info", "access": "${LOG_DIR}/access.log", "error": "${LOG_DIR}/error.log" },
+  "stats": {},
+  "api": { "tag": "api", "services": ["HandlerService", "StatsService"] },
+  "policy": { "levels": { "0": { "statsUserUplink": true, "statsUserDownlink": true } }, "system": { "statsInboundUplink": true, "statsInboundDownlink": true } },
   "inbounds": [{
     "port": ${XRAY_TCP_PORT}, "listen": "0.0.0.0", "protocol": "vless",
     "settings": {
@@ -349,12 +389,14 @@ configure_xray() {
     },
     "sniffing": { "enabled": true, "destOverride": ["http", "tls", "quic"], "routeOnly": true },
     "allocate": { "strategy": "always", "refresh": 5, "concurrency": 8 }
-  }],
-  "outbounds": [{ "protocol": "freedom", "settings": {} }]
+  }, { "listen": "127.0.0.1", "port": 10085, "protocol": "dokodemo-door", "settings": { "address": "127.0.0.1" }, "tag": "api" }],
+  "outbounds": [{ "protocol": "freedom", "settings": {} }],
+  "routing": { "rules": [{ "type": "field", "inboundTag": ["api"], "outboundTag": "api" }] }
 }
 XRAYEOF
   chmod 600 "$CONFIG_DIR/config.json"
   mkdir -p "$LOG_DIR"; chown -R nobody:nogroup "$LOG_DIR" 2>/dev/null
+  mkdir -p "$STATE_DIR"; echo chrome > "$STATE_DIR/fp"
   cat <<INFOEOF | tee "$CONFIG_DIR/client_info.txt" > /dev/null
 ═══════════ RealityGhost PRO ═══════════
 Domain: ${DOMAIN}
@@ -383,13 +425,14 @@ build_subscription() {
   pubkey=$(echo "$keys" | grep -oE "(PublicKey|Password \(PublicKey\)): ?\S+" | head -1 | grep -oE "\S+$")
   [[ -z "$pubkey" ]] && echo -e "${WARN}Warning: could not derive public key from private key${NC}"
   mkdir -p "$SUB_DIR"
+  local fp=$(cat "$STATE_DIR/fp" 2>/dev/null || echo chrome)
   local lines=()
   local idx=0
   for entry in "${SNI_LIST[@]}"; do
     IFS=':' read -r sni label label_url <<< "$entry"
     local real_sid=$(jq -r ".inbounds[0].streamSettings.realitySettings.shortIds[$idx]" "$CONFIG_DIR/config.json" 2>/dev/null)
     [[ -z "$real_sid" || "$real_sid" == "null" ]] && real_sid="0000000000000000"
-    lines+=("vless://${uuid}@${DOMAIN}:443?flow=xtls-rprx-vision&encryption=none&security=reality&sni=${sni}&fp=chrome&spx=%2F&pbk=${pubkey}&sid=${real_sid}&allowinsecure=0&type=tcp&headerType=none#${FLAG}%20${label_url}")
+    lines+=("vless://${uuid}@${DOMAIN}:443?flow=xtls-rprx-vision&encryption=none&security=reality&sni=${sni}&fp=${fp}&spx=%2F&pbk=${pubkey}&sid=${real_sid}&allowinsecure=0&type=tcp&headerType=none#${FLAG}%20${label_url}")
     idx=$((idx+1))
   done
   printf '%s\n' "${lines[@]}" | base64 -w 0 > "$SUB_DIR/sub.txt"
@@ -821,6 +864,12 @@ SERVEOF
   echo -e "${OK}Monitor installed"
 }
 
+_show_panel_login() {
+  [[ -f /etc/realityghost/panel_auth.txt ]] || return 0
+  echo -e "${CYAN}Panel login:${NC}"
+  cat /etc/realityghost/panel_auth.txt
+}
+
 show_info() {
   clear
   local uuid=$(jq -r '.inbounds[0].settings.clients[0].id' "$CONFIG_DIR/config.json" 2>/dev/null)
@@ -933,15 +982,43 @@ CRONEOF
 }
 
 manual_rotate() {
-  for i in $(seq 0 5); do
-    local new_sid=$(openssl rand -hex 8)
-    jq --argjson idx "$i" --arg sid "$new_sid" '.inbounds[0].streamSettings.realitySettings.shortIds[$idx] = $sid' "$CONFIG_DIR/config.json" > "$CONFIG_DIR/config.json.tmp"
-    mv "$CONFIG_DIR/config.json.tmp" "$CONFIG_DIR/config.json"
-  done
+  # SAFE rotation (default): rotate client TLS fingerprint + APPEND new shortIds
+  # (keep old ones as a grace pool) so NO active client is dropped.
+  # HARD rotation (ROTATE_KEYS=1): also rotate Reality keys (drops all clients).
+  mkdir -p "$STATE_DIR"
+  local fps=(chrome firefox safari edge ios randomized)
+  local newfp="${fps[$((RANDOM % ${#fps[@]}))]}"
+  echo "$newfp" > "$STATE_DIR/fp"
+  python3 - "$CONFIG_DIR/config.json" <<'PYROT'
+import json, sys, secrets
+p = sys.argv[1]
+c = json.load(open(p))
+rs = c["inbounds"][0]["streamSettings"]["realitySettings"]
+sids = rs.get("shortIds", [])
+ACTIVE, GRACE_MAX = 6, 18
+active, grace = sids[:ACTIVE], sids[ACTIVE:]
+new_active = [secrets.token_hex(8) for _ in range(ACTIVE)]
+grace = (active + grace)[:GRACE_MAX]
+rs["shortIds"] = new_active + grace
+json.dump(c, open(p, "w"), indent=2)
+PYROT
+  if [[ "${ROTATE_KEYS:-0}" == "1" ]]; then
+    echo -e "${WARN}HARD rotation: rotating Reality keys (all active clients will drop)${NC}"
+    local keys newpriv
+    keys=$(generate_reality_keys)
+    newpriv=$(echo "$keys" | grep -oE "Private(Key)?: ?\S+" | head -1 | grep -oE "\S+$")
+    python3 - "$CONFIG_DIR/config.json" "$newpriv" <<'PYKEY'
+import json, sys
+p = sys.argv[1]
+c = json.load(open(p))
+c["inbounds"][0]["streamSettings"]["realitySettings"]["privateKey"] = sys.argv[2]
+json.dump(c, open(p, "w"), indent=2)
+PYKEY
+  fi
   systemctl restart xray
   build_subscription
   build_panel
-  echo -e "${OK}Short Ids rotated"
+  echo -e "${OK}SAFE rotation done (fp=${newfp}, new shortIds appended, active clients preserved)${NC}"
 }
 
 pull_update() {
@@ -1049,9 +1126,13 @@ uninstall() {
   systemctl disable xray realityghost-monitor realityghost-bot 2>/dev/null
   rm -rf "$INSTALL_DIR" "$CONFIG_DIR" "$STATUS_DIR" "$STATE_DIR" "$SUB_DIR"
   rm -f /etc/systemd/system/xray.service /etc/systemd/system/realityghost-monitor.service /etc/systemd/system/realityghost-bot.service
-  rm -f "$MONITOR_SCRIPT" /etc/cron.d/realityghost-rotate /etc/nginx/nginx.conf
+  systemctl stop fail2ban 2>/dev/null
+  rm -f "$MONITOR_SCRIPT" /etc/cron.d/realityghost-rotate /etc/cron.d/realityghost-bot-enforce /etc/nginx/nginx.conf /etc/nginx/.rgpanel /usr/local/bin/rg-bot.py
   cp /etc/nginx/nginx.conf.backup /etc/nginx/nginx.conf 2>/dev/null
-  rm -f /etc/sysctl.d/99-realityghost.conf /etc/realityghost/bot_config.json /etc/realityghost/users.db
+  rm -f /etc/sysctl.d/99-realityghost.conf /etc/systemd/resolved.conf.d/99-realityghost.conf /etc/fail2ban/jail.local
+  rm -rf /etc/realityghost
+  sysctl --system >/dev/null 2>&1
+  systemctl restart systemd-resolved 2>/dev/null
   systemctl daemon-reload
   systemctl restart nginx 2>/dev/null
   echo -e "${OK}Uninstall complete"
@@ -1075,7 +1156,21 @@ renew_ssl() {
 # ─── Main ────────────────────────────────────────────────────────────
 
 optimize_dns() {
-  echo -e "${INFO}Optimizing DNS resolvers..."
+  echo -e "${INFO}Optimizing DNS (DNS-over-TLS when available)..."
+  if systemctl is-active --quiet systemd-resolved 2>/dev/null; then
+    mkdir -p /etc/systemd/resolved.conf.d
+    cat > /etc/systemd/resolved.conf.d/99-realityghost.conf <<'RESOLVEDEOF'
+[Resolve]
+DNS=1.1.1.1#cloudflare-dns.com 8.8.8.8#dns.google
+FallbackDNS=9.9.9.9#dns.quad9.net
+DNSOverTLS=opportunistic
+DNSSEC=allow-downgrade
+Cache=yes
+RESOLVEDEOF
+    systemctl restart systemd-resolved 2>/dev/null
+    echo -e "${OK}DNS-over-TLS configured (Cloudflare/Google, leak-resistant)"
+    return 0
+  fi
   if grep -q "nameserver 1.1.1.1" /etc/resolv.conf 2>/dev/null; then
     echo -e "${OK}DNS already optimized"
     return 0
@@ -1094,383 +1189,580 @@ install_bot_script() {
   mkdir -p /etc/realityghost
   cat > /usr/local/bin/rg-bot.py <<'RGBOTEOF'
 #!/usr/bin/env python3
-# RealityGhost PRO - Telegram management bot
-# Self-contained: uses only the Python standard library + requests.
-# CLI: init | adduser <name> [mb] [days] | deluser <id> | list | stats | enforce | runbot
-import os
-import sys
+# RealityGhost PRO - Telegram management bot (raw Telegram HTTP API, no external SDK).
+# Features: inline keyboards, QR images, add/remove/suspend/resume users,
+# real per-user traffic accounting via Xray Stats API, quota enforcement, expiry reminders.
 import json
-import time
-import uuid as uuidlib
+import os
 import sqlite3
 import subprocess
-import urllib.parse
-import datetime
+import sys
+import time
+import uuid as uuidlib
+from datetime import datetime, timedelta
 
-CONFIG_DIR = "/usr/local/etc/xray"
-XRAY_CONFIG = os.path.join(CONFIG_DIR, "config.json")
-BOT_DIR = "/etc/realityghost"
-BOT_CONFIG = os.path.join(BOT_DIR, "bot_config.json")
-USERS_DB = os.path.join(BOT_DIR, "users.db")
+try:
+    import requests
+except Exception:
+    requests = None
+
+ETC = "/etc/realityghost"
+CONFIG_FILE = os.path.join(ETC, "bot_config.json")
+DB_FILE = os.path.join(ETC, "users.db")
+XRAY_CONFIG = "/usr/local/etc/xray/config.json"
 XRAY_BIN = "/usr/local/bin/xray"
+API_ADDR = "127.0.0.1:10085"
+API = "https://api.telegram.org/bot{token}/{method}"
 
+# (sni, human label) pairs used to build subscription links.
 SNI_LIST = [
-    ("www.gstatic.com", "Google Static"),
-    ("ajax.googleapis.com", "Google AJAX"),
-    ("storage.googleapis.com", "Google Storage"),
-    ("fonts.gstatic.com", "Google Fonts"),
-    ("fonts.googleapis.com", "Google Fonts API"),
+    ("www.gstatic.com", "Gstatic"),
+    ("ajax.googleapis.com", "Ajax-Google"),
+    ("storage.googleapis.com", "Google-Storage"),
+    ("fonts.gstatic.com", "Fonts-Gstatic"),
+    ("fonts.googleapis.com", "Google-Fonts"),
     ("www.google.com", "Google"),
 ]
 
-HELP = (
-    "RealityGhost PRO bot\n"
-    "/status - server status\n"
-    "/list - list users\n"
-    "/add <name> [days] [mb] - add a user\n"
-    "/del <id> - remove a user\n"
-    "/info <id> - show a user's configs\n"
-)
 
-API = "https://api.telegram.org/bot{token}/{method}"
-
-
-def log(msg):
-    print("[rg-bot] {}".format(msg), flush=True)
-
-
-def load_bot_config():
+# ---------------- config / db ----------------
+def load_config():
     try:
-        with open(BOT_CONFIG) as f:
+        with open(CONFIG_FILE, encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return {"enabled": False, "token": "", "domain": "", "admin_ids": []}
 
 
-def save_bot_config(cfg):
-    os.makedirs(BOT_DIR, exist_ok=True)
-    with open(BOT_CONFIG, "w") as f:
-        json.dump(cfg, f, indent=2)
+def save_config(cfg):
+    os.makedirs(ETC, exist_ok=True)
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(cfg, f)
 
 
 def db():
-    os.makedirs(BOT_DIR, exist_ok=True)
-    conn = sqlite3.connect(USERS_DB)
+    os.makedirs(ETC, exist_ok=True)
+    conn = sqlite3.connect(DB_FILE)
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS users("
-        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "name TEXT NOT NULL,"
-        "uuid TEXT NOT NULL UNIQUE,"
-        "created TEXT NOT NULL,"
-        "days INTEGER DEFAULT 0,"
-        "limit_mb INTEGER DEFAULT 0)"
+        """CREATE TABLE IF NOT EXISTS users(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT, uuid TEXT, email TEXT UNIQUE,
+            mb_limit INTEGER DEFAULT 0, days INTEGER DEFAULT 0,
+            created TEXT, expiry TEXT, disabled INTEGER DEFAULT 0,
+            offset_bytes INTEGER DEFAULT 0, last_seen INTEGER DEFAULT 0)"""
     )
     conn.commit()
     return conn
 
 
+# ---------------- xray helpers ----------------
 def load_xray():
-    with open(XRAY_CONFIG) as f:
+    with open(XRAY_CONFIG, encoding="utf-8") as f:
         return json.load(f)
 
 
 def save_xray(cfg):
-    tmp = XRAY_CONFIG + ".tmp"
-    with open(tmp, "w") as f:
+    with open(XRAY_CONFIG, "w", encoding="utf-8") as f:
         json.dump(cfg, f, indent=2)
-    os.replace(tmp, XRAY_CONFIG)
-    try:
-        os.chmod(XRAY_CONFIG, 0o600)
-    except Exception:
-        pass
 
 
 def restart_xray():
-    subprocess.run(["systemctl", "restart", "xray"], check=False)
+    subprocess.run(["systemctl", "restart", "xray"], capture_output=True)
 
 
-def get_domain():
-    cfg = load_bot_config()
-    if cfg.get("domain"):
-        return cfg["domain"]
-    try:
-        xc = load_xray()
-        email = xc["inbounds"][0]["settings"]["clients"][0].get("email", "")
-        return email.split("@", 1)[1] if "@" in email else ""
-    except Exception:
-        return ""
+def reality():
+    return load_xray()["inbounds"][0]["streamSettings"]["realitySettings"]
 
 
 def get_public_key():
+    cfg = load_xray()
+    priv = cfg["inbounds"][0]["streamSettings"]["realitySettings"]["privateKey"]
     try:
-        xc = load_xray()
-        priv = xc["inbounds"][0]["streamSettings"]["realitySettings"]["privateKey"]
         out = subprocess.run(
-            [XRAY_BIN, "x25519", "-i", priv],
-            capture_output=True, text=True,
+            [XRAY_BIN, "x25519", "-i", priv], capture_output=True, text=True
         ).stdout
         for line in out.splitlines():
-            for tag in ("Password:", "PublicKey:", "Public key:"):
-                if tag in line:
-                    return line.split(tag, 1)[1].strip()
-    except Exception as exc:
-        log("pubkey error: {}".format(exc))
+            for key in ("Password (PublicKey):", "PublicKey:", "Public key:", "Password:"):
+                if key in line:
+                    return line.split(key, 1)[1].strip().split()[0]
+    except Exception:
+        pass
     return ""
 
 
-def user_links(user_uuid):
-    xc = load_xray()
-    rs = xc["inbounds"][0]["streamSettings"]["realitySettings"]
-    sids = rs.get("shortIds", ["0000000000000000"]) or ["0000000000000000"]
+def current_fp():
+    try:
+        with open("/var/lib/realityghost/fp", encoding="utf-8") as f:
+            v = f.read().strip()
+            return v or "chrome"
+    except Exception:
+        return "chrome"
+
+
+def add_xray_client(user_uuid, email):
+    cfg = load_xray()
+    clients = cfg["inbounds"][0]["settings"]["clients"]
+    if any(c.get("email") == email for c in clients):
+        return False
+    clients.append(
+        {"id": user_uuid, "flow": "xtls-rprx-vision", "level": 0, "email": email}
+    )
+    save_xray(cfg)
+    restart_xray()
+    return True
+
+
+def remove_xray_client(email):
+    cfg = load_xray()
+    inbound = cfg["inbounds"][0]["settings"]
+    before = len(inbound["clients"])
+    inbound["clients"] = [c for c in inbound["clients"] if c.get("email") != email]
+    if len(inbound["clients"]) != before:
+        save_xray(cfg)
+        restart_xray()
+        return True
+    return False
+
+
+def build_links(user_uuid, domain):
     pbk = get_public_key()
-    domain = get_domain()
+    rs = reality()
+    sids = rs.get("shortIds", [])
+    fp = current_fp()
     links = []
     for i, (sni, label) in enumerate(SNI_LIST):
-        sid = sids[i] if i < len(sids) else sids[0]
-        tag = urllib.parse.quote("RG {}".format(label))
+        sid = sids[i] if i < len(sids) else ""
         links.append(
-            "vless://{uuid}@{domain}:443?flow=xtls-rprx-vision&encryption=none"
-            "&security=reality&sni={sni}&fp=chrome&pbk={pbk}&sid={sid}"
-            "&spx=%2F&type=tcp&headerType=none#{tag}".format(
-                uuid=user_uuid, domain=domain, sni=sni, pbk=pbk, sid=sid, tag=tag
+            "vless://{u}@{d}:443?flow=xtls-rprx-vision&encryption=none"
+            "&security=reality&sni={sni}&fp={fp}&spx=%2F&pbk={pbk}&sid={sid}"
+            "&allowinsecure=0&type=tcp&headerType=none#RG-{label}".format(
+                u=user_uuid, d=domain, sni=sni, fp=fp, pbk=pbk, sid=sid, label=label
             )
         )
     return links
 
 
-def cmd_init():
-    os.makedirs(BOT_DIR, exist_ok=True)
-    db().close()
-    if not os.path.exists(BOT_CONFIG):
-        save_bot_config({"enabled": False, "token": "", "domain": get_domain(), "admin_ids": []})
-    log("initialized")
+# ---------------- traffic (Xray Stats API) ----------------
+def query_traffic():
+    """Return {email: current_bytes} summed uplink+downlink since last xray restart."""
+    result = {}
+    try:
+        out = subprocess.run(
+            [XRAY_BIN, "api", "statsquery", "--server=" + API_ADDR, "-pattern", "user>>>"],
+            capture_output=True, text=True, timeout=10,
+        ).stdout
+        data = json.loads(out or "{}")
+        for item in data.get("stat", []) or []:
+            name = item.get("name", "")
+            val = int(item.get("value", 0) or 0)
+            parts = name.split(">>>")
+            if len(parts) >= 2:
+                result[parts[1]] = result.get(parts[1], 0) + val
+    except Exception:
+        pass
+    return result
 
 
-def add_user(name, limit_mb=0, days=0):
-    name = (name or "user").strip() or "user"
-    new_uuid = str(uuidlib.uuid4())
-    xc = load_xray()
-    clients = xc["inbounds"][0]["settings"]["clients"]
-    domain = get_domain()
-    clients.append({
-        "id": new_uuid,
-        "flow": "xtls-rprx-vision",
-        "level": 0,
-        "email": "{}-{}@{}".format(name, new_uuid[:8], domain or "local"),
-    })
-    save_xray(xc)
-    restart_xray()
+def accumulate_traffic():
+    """Update cumulative usage in DB, handling xray restarts (counter resets)."""
+    live = query_traffic()
+    conn = db()
+    totals = {}
+    for row in conn.execute("SELECT email, offset_bytes, last_seen FROM users").fetchall():
+        email, offset_bytes, last_seen = row
+        cur = live.get(email, 0)
+        if cur < last_seen:  # xray was restarted -> counter reset
+            offset_bytes += last_seen
+        total = offset_bytes + cur
+        conn.execute(
+            "UPDATE users SET offset_bytes=?, last_seen=? WHERE email=?",
+            (offset_bytes, cur, email),
+        )
+        totals[email] = total
+    conn.commit()
+    conn.close()
+    return totals
+
+
+def human_bytes(n):
+    n = float(n)
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if n < 1024 or unit == "TB":
+            return "%.2f %s" % (n, unit)
+        n /= 1024
+
+
+# ---------------- telegram api ----------------
+def tg(method, token, **params):
+    if requests is None:
+        return {}
+    try:
+        r = requests.post(API.format(token=token, method=method), data=params, timeout=35)
+        return r.json()
+    except Exception:
+        return {}
+
+
+def tg_photo(token, chat_id, png_bytes, caption=""):
+    if requests is None:
+        return {}
+    try:
+        r = requests.post(
+            API.format(token=token, method="sendPhoto"),
+            data={"chat_id": chat_id, "caption": caption},
+            files={"photo": ("qr.png", png_bytes, "image/png")},
+            timeout=35,
+        )
+        return r.json()
+    except Exception:
+        return {}
+
+
+def qr_png(text):
+    try:
+        p = subprocess.run(
+            ["qrencode", "-o", "-", "-t", "PNG", "-s", "6", "-m", "2", text],
+            capture_output=True, timeout=10,
+        )
+        return p.stdout or None
+    except Exception:
+        return None
+
+
+def kb(rows):
+    return json.dumps({"inline_keyboard": rows})
+
+
+def main_menu():
+    return kb([
+        [{"text": "\U0001F465 Users", "callback_data": "users"},
+         {"text": "\u2795 Add User", "callback_data": "add"}],
+        [{"text": "\U0001F4CA Traffic", "callback_data": "traffic"},
+         {"text": "\U0001F5A5 Server", "callback_data": "stats"}],
+        [{"text": "\U0001F504 Refresh", "callback_data": "menu"}],
+    ])
+
+
+# ---------------- user operations ----------------
+def create_user(name, mb=0, days=0):
+    cfg = load_config()
+    domain = cfg.get("domain", "")
+    u = str(uuidlib.uuid4())
+    email = "%s-%s@%s" % (name, u[:8], domain)
+    now = datetime.utcnow()
+    expiry = (now + timedelta(days=days)).isoformat() if days else ""
     conn = db()
     conn.execute(
-        "INSERT INTO users(name,uuid,created,days,limit_mb) VALUES(?,?,?,?,?)",
-        (name, new_uuid, datetime.datetime.utcnow().isoformat(), int(days or 0), int(limit_mb or 0)),
+        "INSERT INTO users(name,uuid,email,mb_limit,days,created,expiry,disabled)"
+        " VALUES(?,?,?,?,?,?,?,0)",
+        (name, u, email, int(mb), int(days), now.isoformat(), expiry),
     )
     conn.commit()
-    uid = conn.execute("SELECT id FROM users WHERE uuid=?", (new_uuid,)).fetchone()[0]
     conn.close()
-    return uid, new_uuid
+    add_xray_client(u, email)
+    return u, email, domain
 
 
-def del_user(ident):
+def set_disabled(email, disabled):
     conn = db()
-    row = conn.execute(
-        "SELECT id,uuid FROM users WHERE id=? OR uuid=?", (ident, ident)
-    ).fetchone()
+    conn.execute("UPDATE users SET disabled=? WHERE email=?", (1 if disabled else 0, email))
+    conn.commit()
+    row = conn.execute("SELECT uuid FROM users WHERE email=?", (email,)).fetchone()
+    conn.close()
     if not row:
-        conn.close()
         return False
-    uid, user_uuid = row
-    conn.execute("DELETE FROM users WHERE id=?", (uid,))
+    if disabled:
+        remove_xray_client(email)
+    else:
+        add_xray_client(row[0], email)
+    return True
+
+
+def delete_user(email):
+    remove_xray_client(email)
+    conn = db()
+    conn.execute("DELETE FROM users WHERE email=?", (email,))
     conn.commit()
     conn.close()
-    xc = load_xray()
-    clients = xc["inbounds"][0]["settings"]["clients"]
-    xc["inbounds"][0]["settings"]["clients"] = [c for c in clients if c.get("id") != user_uuid]
-    save_xray(xc)
-    restart_xray()
-    return True
 
 
 def list_users():
     conn = db()
     rows = conn.execute(
-        "SELECT id,name,uuid,created,days,limit_mb FROM users ORDER BY id"
+        "SELECT id,name,email,uuid,mb_limit,expiry,disabled FROM users ORDER BY id"
     ).fetchall()
     conn.close()
     return rows
 
 
-def is_expired(row):
-    created, days = row[3], row[4]
-    if not days:
-        return False
-    try:
-        start = datetime.datetime.fromisoformat(created)
-    except Exception:
-        return False
-    return datetime.datetime.utcnow() > start + datetime.timedelta(days=int(days))
+def enforce():
+    """Disable users past expiry or over quota. Returns list of (email, reason)."""
+    totals = accumulate_traffic()
+    now = datetime.utcnow()
+    disabled = []
+    conn = db()
+    rows = conn.execute(
+        "SELECT email,mb_limit,expiry,disabled FROM users"
+    ).fetchall()
+    conn.close()
+    for email, mb_limit, expiry, is_disabled in rows:
+        if is_disabled:
+            continue
+        reason = None
+        if expiry:
+            try:
+                if now > datetime.fromisoformat(expiry):
+                    reason = "expired"
+            except Exception:
+                pass
+        if not reason and mb_limit and totals.get(email, 0) >= int(mb_limit) * 1024 * 1024:
+            reason = "quota exceeded"
+        if reason:
+            set_disabled(email, True)
+            disabled.append((email, reason))
+    return disabled
 
 
-def cmd_enforce():
-    removed = 0
-    for row in list_users():
-        if is_expired(row):
-            if del_user(row[0]):
-                removed += 1
-    log("enforce removed {} expired user(s)".format(removed))
-
-
-def server_status():
-    def sc(cmd):
+def expiring_soon(days=3):
+    now = datetime.utcnow()
+    soon = []
+    for _id, name, email, _u, _mb, expiry, dis in list_users():
+        if dis or not expiry:
+            continue
         try:
-            return subprocess.run(cmd, capture_output=True, text=True).stdout.strip()
+            exp = datetime.fromisoformat(expiry)
         except Exception:
-            return "?"
-    nginx = sc(["systemctl", "is-active", "nginx"])
-    xray = sc(["systemctl", "is-active", "xray"])
-    users = len(list_users())
-    return "Domain: {}\nnginx: {}\nxray: {}\nusers: {}".format(
-        get_domain(), nginx, xray, users
-    )
+            continue
+        left = (exp - now).days
+        if 0 <= left <= days:
+            soon.append((name, email, left))
+    return soon
 
 
-def tg(token, method, **params):
-    import requests
-    try:
-        resp = requests.post(API.format(token=token, method=method), json=params, timeout=65)
-        return resp.json()
-    except Exception as exc:
-        log("tg error: {}".format(exc))
-        return {}
-
-
-def handle(cfg, token, msg):
-    chat = msg["chat"]["id"]
-    frm = msg.get("from", {}).get("id")
-    text = (msg.get("text") or "").strip()
-    if not text:
-        return
-    # The first person to message the bot becomes the admin.
-    if not cfg.get("admin_ids"):
-        cfg["admin_ids"] = [frm]
-        save_bot_config(cfg)
-        tg(token, "sendMessage", chat_id=chat, text="You are now the bot admin.")
-    if frm not in cfg.get("admin_ids", []):
-        tg(token, "sendMessage", chat_id=chat, text="Not authorized.")
-        return
-    parts = text.split()
-    cmd = parts[0].lower().lstrip("/").split("@")[0]
-    args = parts[1:]
-    if cmd in ("start", "help"):
-        tg(token, "sendMessage", chat_id=chat, text=HELP)
-    elif cmd == "status":
-        tg(token, "sendMessage", chat_id=chat, text=server_status())
-    elif cmd == "list":
-        rows = list_users()
-        if not rows:
-            tg(token, "sendMessage", chat_id=chat, text="No users yet. /add <name> [days] [mb]")
-        else:
-            lines = [
-                "#{} {} - {} (days: {})".format(r[0], r[1], r[2][:8], r[4] or "unlimited")
-                for r in rows
-            ]
-            tg(token, "sendMessage", chat_id=chat, text="\n".join(lines))
-    elif cmd == "add":
-        if not args:
-            tg(token, "sendMessage", chat_id=chat, text="Usage: /add <name> [days] [mb]")
-            return
-        name = args[0]
-        days = int(args[1]) if len(args) > 1 and args[1].isdigit() else 0
-        mb = int(args[2]) if len(args) > 2 and args[2].isdigit() else 0
-        uid, user_uuid = add_user(name, mb, days)
-        links = "\n".join(user_links(user_uuid))
-        tg(token, "sendMessage", chat_id=chat,
-           text="Added #{} {}\nUUID: {}\n\n{}".format(uid, name, user_uuid, links))
-    elif cmd in ("del", "delete", "rm"):
-        if not args:
-            tg(token, "sendMessage", chat_id=chat, text="Usage: /del <id>")
-            return
-        ok = del_user(args[0])
-        tg(token, "sendMessage", chat_id=chat, text="Deleted." if ok else "Not found.")
-    elif cmd in ("info", "sub"):
-        if not args:
-            tg(token, "sendMessage", chat_id=chat, text="Usage: /info <id>")
-            return
-        conn = db()
-        row = conn.execute(
-            "SELECT id,name,uuid FROM users WHERE id=? OR uuid=?", (args[0], args[0])
-        ).fetchone()
-        conn.close()
-        if not row:
-            tg(token, "sendMessage", chat_id=chat, text="Not found.")
-            return
-        links = "\n".join(user_links(row[2]))
-        tg(token, "sendMessage", chat_id=chat,
-           text="#{} {}\nUUID: {}\n\n{}".format(row[0], row[1], row[2], links))
-    else:
-        tg(token, "sendMessage", chat_id=chat, text="Unknown command. /help")
-
-
-def run_bot():
-    import requests
-    cfg = load_bot_config()
+def notify_admins(text):
+    cfg = load_config()
     token = cfg.get("token", "")
     if not token:
-        log("no token configured")
-        sys.exit(1)
-    log("bot polling started")
+        return
+    for a in cfg.get("admin_ids", []):
+        tg("sendMessage", token, chat_id=a, text=text)
+
+
+# ---------------- bot loop ----------------
+PENDING = {}
+
+
+def is_admin(cfg, uid):
+    return uid in cfg.get("admin_ids", [])
+
+
+def user_detail_kb(email):
+    return kb([
+        [{"text": "\U0001F517 Links + QR", "callback_data": "qr:" + email}],
+        [{"text": "\u23F8 Suspend", "callback_data": "sus:" + email},
+         {"text": "\u25B6 Resume", "callback_data": "res:" + email}],
+        [{"text": "\U0001F5D1 Delete", "callback_data": "del:" + email},
+         {"text": "\u2B05 Back", "callback_data": "users"}],
+    ])
+
+
+def render_users():
+    rows = list_users()
+    if not rows:
+        return "No users yet.", kb([[{"text": "\u2795 Add User", "callback_data": "add"}],
+                                    [{"text": "\u2B05 Back", "callback_data": "menu"}]])
+    buttons = []
+    for _id, name, email, _u, _mb, _exp, dis in rows:
+        mark = "\u26D4" if dis else "\u2705"
+        buttons.append([{"text": "%s %s" % (mark, name), "callback_data": "u:" + email}])
+    buttons.append([{"text": "\u2B05 Back", "callback_data": "menu"}])
+    return "Select a user:", kb(buttons)
+
+
+def handle_callback(cfg, token, cq):
+    data = cq.get("data", "")
+    msg = cq.get("message", {})
+    chat_id = msg.get("chat", {}).get("id")
+    uid = cq.get("from", {}).get("id")
+    tg("answerCallbackQuery", token, callback_query_id=cq.get("id"))
+    if not is_admin(cfg, uid):
+        return
+    if data == "menu":
+        tg("sendMessage", token, chat_id=chat_id, text="\U0001F47B RG PRO Control Panel", reply_markup=main_menu())
+    elif data == "users":
+        text, markup = render_users()
+        tg("sendMessage", token, chat_id=chat_id, text=text, reply_markup=markup)
+    elif data == "add":
+        PENDING[uid] = "await_name"
+        tg("sendMessage", token, chat_id=chat_id,
+           text="Send new user as: name [quota_MB] [days]\nExample: ali 50000 30")
+    elif data == "stats":
+        tg("sendMessage", token, chat_id=chat_id, text=server_stats())
+    elif data == "traffic":
+        tg("sendMessage", token, chat_id=chat_id, text=traffic_report())
+    elif data.startswith("u:"):
+        email = data[2:]
+        tg("sendMessage", token, chat_id=chat_id, text="User: " + email, reply_markup=user_detail_kb(email))
+    elif data.startswith("qr:"):
+        email = data[3:]
+        send_user_config(token, chat_id, email)
+    elif data.startswith("sus:"):
+        set_disabled(data[4:], True)
+        tg("sendMessage", token, chat_id=chat_id, text="\u23F8 Suspended: " + data[4:])
+    elif data.startswith("res:"):
+        set_disabled(data[4:], False)
+        tg("sendMessage", token, chat_id=chat_id, text="\u25B6 Resumed: " + data[4:])
+    elif data.startswith("del:"):
+        delete_user(data[4:])
+        tg("sendMessage", token, chat_id=chat_id, text="\U0001F5D1 Deleted: " + data[4:])
+
+
+def send_user_config(token, chat_id, email):
+    conn = db()
+    row = conn.execute("SELECT uuid FROM users WHERE email=?", (email,)).fetchone()
+    conn.close()
+    if not row:
+        tg("sendMessage", token, chat_id=chat_id, text="User not found.")
+        return
+    cfg = load_config()
+    links = build_links(row[0], cfg.get("domain", ""))
+    tg("sendMessage", token, chat_id=chat_id, text="\n\n".join(links))
+    png = qr_png(links[0])
+    if png:
+        tg_photo(token, chat_id, png, caption="QR: " + email)
+
+
+def server_stats():
+    try:
+        with open("/var/www/html/status/stats.json", encoding="utf-8") as f:
+            s = json.load(f)
+        return ("\U0001F5A5 Server\nCPU: {cpu}\nRAM: {ram}%\nUptime: {up}\n"
+                "Connections: {con}").format(
+            cpu=s.get("cpu", "?"), ram=s.get("ram", {}).get("usage", "?"),
+            up=s.get("uptime", "?"), con=s.get("connections", "?"))
+    except Exception:
+        return "Server stats unavailable."
+
+
+def traffic_report():
+    totals = accumulate_traffic()
+    rows = list_users()
+    if not rows:
+        return "No users."
+    lines = ["\U0001F4CA Traffic per user:"]
+    for _id, name, email, _u, mb, _exp, dis in rows:
+        used = totals.get(email, 0)
+        cap = ("/" + human_bytes(int(mb) * 1024 * 1024)) if mb else ""
+        lines.append("%s %s: %s%s" % ("\u26D4" if dis else "\u2705", name, human_bytes(used), cap))
+    return "\n".join(lines)
+
+
+def handle_message(cfg, token, m):
+    chat = m.get("chat", {})
+    chat_id = chat.get("id")
+    uid = m.get("from", {}).get("id")
+    text = (m.get("text") or "").strip()
+    # First user to talk becomes admin if none set.
+    if not cfg.get("admin_ids"):
+        cfg["admin_ids"] = [uid]
+        save_config(cfg)
+        tg("sendMessage", token, chat_id=chat_id, text="\u2705 You are now the admin.")
+    if not is_admin(cfg, uid):
+        tg("sendMessage", token, chat_id=chat_id, text="\u26D4 Not authorized.")
+        return
+    if PENDING.get(uid) == "await_name" and not text.startswith("/"):
+        PENDING.pop(uid, None)
+        parts = text.split()
+        name = parts[0]
+        mb = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+        days = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 0
+        u, email, _ = create_user(name, mb, days)
+        tg("sendMessage", token, chat_id=chat_id,
+           text="\u2705 Created %s\nQuota: %s MB  Days: %s" % (name, mb or "\u221E", days or "\u221E"))
+        send_user_config(token, chat_id, email)
+        return
+    if text in ("/start", "/menu"):
+        tg("sendMessage", token, chat_id=chat_id, text="\U0001F47B RG PRO Control Panel", reply_markup=main_menu())
+    elif text == "/traffic":
+        tg("sendMessage", token, chat_id=chat_id, text=traffic_report())
+    elif text == "/stats":
+        tg("sendMessage", token, chat_id=chat_id, text=server_stats())
+    else:
+        tg("sendMessage", token, chat_id=chat_id, text="Send /menu to open the control panel.")
+
+
+def runbot():
+    cfg = load_config()
+    token = cfg.get("token", "")
+    if not cfg.get("enabled") or not token:
+        print("Bot disabled or no token.")
+        return
     offset = None
     while True:
         try:
-            params = {"timeout": 60}
+            params = {"timeout": 30}
             if offset is not None:
                 params["offset"] = offset
-            resp = requests.get(
-                API.format(token=token, method="getUpdates"), params=params, timeout=65
-            )
-            data = resp.json()
-            for upd in data.get("result", []):
+            resp = tg("getUpdates", token, **params)
+            for upd in resp.get("result", []) or []:
                 offset = upd["update_id"] + 1
-                cfg = load_bot_config()
-                msg = upd.get("message") or upd.get("edited_message")
-                if msg:
-                    handle(cfg, token, msg)
-        except Exception as exc:
-            log("loop error: {}".format(exc))
-            time.sleep(5)
+                cfg = load_config()
+                if "callback_query" in upd:
+                    handle_callback(cfg, token, upd["callback_query"])
+                elif "message" in upd:
+                    handle_message(cfg, token, upd["message"])
+        except Exception as e:
+            print("loop error:", e)
+            time.sleep(3)
 
 
+# ---------------- CLI ----------------
 def main():
-    if len(sys.argv) < 2:
-        print("usage: rg-bot.py {init|adduser|deluser|list|stats|enforce|runbot}")
-        return
-    cmd = sys.argv[1]
+    args = sys.argv[1:]
+    cmd = args[0] if args else ""
     if cmd == "init":
-        cmd_init()
+        db()
+        print("Initialized.")
     elif cmd == "adduser":
-        name = sys.argv[2] if len(sys.argv) > 2 else "user"
-        mb = sys.argv[3] if len(sys.argv) > 3 else "0"
-        days = sys.argv[4] if len(sys.argv) > 4 else "0"
-        uid, user_uuid = add_user(name, mb, days)
-        print("Added user #{} ({}) uuid={}".format(uid, name, user_uuid))
-        for link in user_links(user_uuid):
+        name = args[1]
+        mb = int(args[2]) if len(args) > 2 else 0
+        days = int(args[3]) if len(args) > 3 else 0
+        u, email, domain = create_user(name, mb, days)
+        print("Created", email)
+        for link in build_links(u, domain):
             print(link)
     elif cmd == "deluser":
-        if len(sys.argv) < 3:
-            print("need id")
-            return
-        print("deleted" if del_user(sys.argv[2]) else "not found")
+        delete_user(args[1])
+        print("Deleted", args[1])
+    elif cmd == "suspend":
+        set_disabled(args[1], True)
+        print("Suspended", args[1])
+    elif cmd == "resume":
+        set_disabled(args[1], False)
+        print("Resumed", args[1])
     elif cmd == "list":
-        for r in list_users():
-            print("#{} {} {} days={} mb={}".format(r[0], r[1], r[2], r[4] or 0, r[5] or 0))
+        for row in list_users():
+            print(row)
     elif cmd == "stats":
-        print(server_status())
+        print(server_stats())
+    elif cmd == "traffic":
+        print(traffic_report())
     elif cmd == "enforce":
-        cmd_enforce()
+        disabled = enforce()
+        for email, reason in disabled:
+            notify_admins("\u26D4 Disabled %s (%s)" % (email, reason))
+        print("Enforced. Disabled:", len(disabled))
+    elif cmd == "notify":
+        soon = expiring_soon(3)
+        if soon:
+            msg = "\u23F3 Expiring soon:\n" + "\n".join(
+                "%s (%s) - %sd left" % (n, e, d) for n, e, d in soon)
+            notify_admins(msg)
+        print("Reminders sent:", len(soon))
     elif cmd == "runbot":
-        run_bot()
+        runbot()
     else:
-        print("unknown: {}".format(cmd))
+        print("Usage: rg-bot.py {init|adduser|deluser|suspend|resume|list|stats|traffic|enforce|notify|runbot}")
 
 
 if __name__ == "__main__":
@@ -1510,8 +1802,10 @@ main_install() {
   preflight_check
   install_dependencies
   system_tuning
+  setup_fail2ban
   install_xray
   install_certbot
+  setup_panel_auth
   configure_nginx
   configure_xray
   build_subscription
@@ -1668,20 +1962,48 @@ speed_test() {
   fi
 }
 
+rg_alert() {
+  local msg="$1"
+  local cfg=/etc/realityghost/bot_config.json
+  [[ -f "$cfg" ]] || return 0
+  local token admins
+  token=$(jq -r '.token // empty' "$cfg" 2>/dev/null)
+  admins=$(jq -r '.admin_ids[]? // empty' "$cfg" 2>/dev/null)
+  [[ -z "$token" || -z "$admins" ]] && return 0
+  local a
+  for a in $admins; do
+    curl -s --max-time 8 "https://api.telegram.org/bot${token}/sendMessage" \
+      --data-urlencode "chat_id=${a}" --data-urlencode "text=\xf0\x9f\x9a\xa8 RG PRO: ${msg}" >/dev/null 2>&1
+  done
+}
+
 auto_heal() {
   local fixed=0
   for svc in nginx xray; do
     if ! systemctl is-active --quiet "$svc"; then
       echo -e "${WARN}$svc is down! Restarting...${NC}"
-      systemctl restart "$svc"
+      systemctl restart "$svc"; rg_alert "$svc was down and has been restarted"
       fixed=$((fixed+1))
     fi
   done
-  # Check port 443
   if ! ss -tlnp | grep -q ':443 '; then
     echo -e "${WARN}Port 443 is down! Restarting services...${NC}"
-    systemctl restart nginx xray
+    systemctl restart nginx xray; rg_alert "Port 443 was down; services restarted"
     fixed=$((fixed+1))
+  fi
+  local cert="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
+  if [[ -n "$DOMAIN" && -f "$cert" ]]; then
+    local exp_epoch now_epoch days
+    exp_epoch=$(date -d "$(openssl x509 -enddate -noout -in "$cert" 2>/dev/null | cut -d= -f2)" +%s 2>/dev/null)
+    now_epoch=$(date +%s)
+    if [[ -n "$exp_epoch" ]]; then
+      days=$(( (exp_epoch - now_epoch) / 86400 ))
+      if [[ $days -lt 7 ]]; then
+        echo -e "${WARN}TLS cert expires in ${days}d - renewing...${NC}"
+        renew_ssl; rg_alert "TLS certificate expiring in ${days}d; renewal attempted"
+        fixed=$((fixed+1))
+      fi
+    fi
   fi
   [[ $fixed -gt 0 ]] && echo -e "${OK}Auto-healed $fixed issue(s)${NC}"
   return $fixed
