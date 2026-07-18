@@ -544,6 +544,8 @@ ALL();setInterval(ALL,3000)
 </script>
 </body></html>
 PANEOF
+  local SERVER_IP=$(curl -4 -s --max-time 3 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
+  sed -i "s/\${DOMAIN}/$DOMAIN/g; s/\${uuid}/$uuid/g; s/\${pubkey_line}/$pubkey_line/g; s/\${SERVER_IP}/$SERVER_IP/g" "$STATUS_DIR/index.html"
   chown -R www-data:www-data "$STATUS_DIR" 2>/dev/null
   echo -e "${OK}Panel built"
 }
