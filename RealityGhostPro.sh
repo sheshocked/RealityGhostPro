@@ -27,22 +27,25 @@ SNI_LIST=(
 )
 
 detect_location() {
-  local data country ip
-  # Try multiple geolocation APIs with fallback
-  data=$(curl -4 -s --max-time 3 "https://ipapi.co/json/" 2>/dev/null)
-  country=$(echo "$data" | jq -r '.country_code // ""' 2>/dev/null)
-  ip=$(echo "$data" | jq -r '.ip // ""' 2>/dev/null)
-  if [[ -z "$country" || "$country" == "null" || ${#country} -gt 3 ]]; then
-    data=$(curl -4 -s --max-time 3 "http://ip-api.com/json/" 2>/dev/null)
+  local data country ip retries=0
+  # Retry up to 3 times with 2s delay to handle slow DNS on first boot
+  while [[ $retries -lt 3 ]]; do
+    data=$(curl -4 -s --max-time 5 "https://ipapi.co/json/" 2>/dev/null)
+    country=$(echo "$data" | jq -r '.country_code // ""' 2>/dev/null)
+    ip=$(echo "$data" | jq -r '.ip // ""' 2>/dev/null)
+    [[ -n "$country" && "$country" != "null" && ${#country} -le 3 ]] && break
+    data=$(curl -4 -s --max-time 5 "http://ip-api.com/json/" 2>/dev/null)
     country=$(echo "$data" | jq -r '.countryCode // ""' 2>/dev/null)
     ip=$(echo "$data" | jq -r '.query // ""' 2>/dev/null)
-  fi
-  if [[ -z "$country" || "$country" == "null" ]]; then
-    data=$(curl -4 -s --max-time 3 "https://ipinfo.io/json" 2>/dev/null)
+    [[ -n "$country" && "$country" != "null" ]] && break
+    data=$(curl -4 -s --max-time 5 "https://ipinfo.io/json" 2>/dev/null)
     country=$(echo "$data" | jq -r '.country // ""' 2>/dev/null)
     ip=$(echo "$data" | jq -r '.ip // ""' 2>/dev/null)
-  fi
-  [[ -z "$country" || "$country" == "null" ]] && country="US"
+    [[ -n "$country" && "$country" != "null" ]] && break
+    retries=$((retries+1))
+    [[ $retries -lt 3 ]] && sleep 2
+  done
+  [[ -z "$country" || "$country" == "null" ]] && country="XX"
   case "$country" in
     IR) FLAG="%F0%9F%87%AE%F0%9F%87%B7"; FLAG_RAW="🇮🇷"; LOC="Iran" ;;
     DE) FLAG="%F0%9F%87%A9%F0%9F%87%AA"; FLAG_RAW="🇩🇪"; LOC="Germany" ;;
@@ -60,7 +63,8 @@ detect_location() {
     JP) FLAG="%F0%9F%87%AF%F0%9F%87%B5"; FLAG_RAW="🇯🇵"; LOC="Japan" ;;
     US) FLAG="%F0%9F%87%BA%F0%9F%87%B8"; FLAG_RAW="🇺🇸"; LOC="USA" ;;
     LV) FLAG="%F0%9F%87%B1%F0%9F%87%BB"; FLAG_RAW="🇱🇻"; LOC="Latvia" ;;
-    *)  FLAG="%F0%9F%87%BA%F0%9F%87%B8"; FLAG_RAW="🇺🇸"; LOC="Unknown" ;;
+    XX) FLAG=""; FLAG_RAW="🌍"; LOC="Unknown" ;;
+    *)  FLAG=""; FLAG_RAW="🌍"; LOC="Unknown" ;;
   esac
 }
 
@@ -847,12 +851,14 @@ renew_ssl() {
 
 main_install() {
   echo ""
-  echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
-  echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
-  echo -e "${PURPLE}  ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
-  echo -e "${PURPLE}  ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
-  echo -e "${PURPLE}  ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
-  echo -e "${PURPLE}   ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
+  echo -e "${PURPLE}   _____   _____   _____  _____   ____  ${NC}"
+  echo -e "${PURPLE}  |  __ \ / ____| |  __ \|  __ \ / __ \ ${NC}"
+  echo -e "${PURPLE}  | |__) | |  __  | |__) | |__) | |  | |${NC}"
+  echo -e "${PURPLE}  |  _  /| | |_ | |  ___/|  _  /| |  | |${NC}"
+  echo -e "${PURPLE}  | | \ \| |__| | | |    | | \ \| |__| |${NC}"
+  echo -e "${PURPLE}  |_|  \_\\_____| |_|    |_|  \_\\____/ ${NC}"
+  echo -e "${PURPLE}                                       ${NC}"
+  echo -e "${PURPLE}                                       ${NC}"
   echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
   echo -e "${PURPLE}  RG PRO — Xray VLESS+Reality Installer${NC}"
   echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
@@ -901,12 +907,14 @@ main_install() {
 manage_menu() {
   while true; do
     clear
-    echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
-    echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
-    echo -e "${PURPLE}  ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
-    echo -e "${PURPLE}  ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
-    echo -e "${PURPLE}  ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
-    echo -e "${PURPLE}   ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
+    echo -e "${PURPLE}   _____   _____   _____  _____   ____  ${NC}"
+    echo -e "${PURPLE}  |  __ \ / ____| |  __ \|  __ \ / __ \ ${NC}"
+    echo -e "${PURPLE}  | |__) | |  __  | |__) | |__) | |  | |${NC}"
+    echo -e "${PURPLE}  |  _  /| | |_ | |  ___/|  _  /| |  | |${NC}"
+    echo -e "${PURPLE}  | | \ \| |__| | | |    | | \ \| |__| |${NC}"
+    echo -e "${PURPLE}  |_|  \_\\_____| |_|    |_|  \_\\____/ ${NC}"
+    echo -e "${PURPLE}                                       ${NC}"
+    echo -e "${PURPLE}                                       ${NC}"
     echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
     echo -e "${PURPLE}  ${FLAG_RAW} ${LOC} • ${DOMAIN}${NC}"
     echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
@@ -1054,13 +1062,14 @@ case "${1:-}" in
   uninstall) check_root; uninstall ;;
   *)
     echo ""
-    echo -e "${PURPLE}  ██████╗  ██████╗     ██████╗ ██████╗  ██████╗ ${NC}"
-    echo -e "${PURPLE}  ██╔════╝ ██╔════╝     ██╔══██╗██╔══██╗██╔═══██╗${NC}"
-    echo -e "${PURPLE}  ██║  ███╗██████╗      ██████╔╝██████╔╝██║   ██║${NC}"
-    echo -e "${PURPLE}  ██║   ██║██╔═══╝      ██╔══██╗██╔═══╝ ██║   ██║${NC}"
-    echo -e "${PURPLE}  ╚██████╔╝██████╗      ██║  ██║██║     ╚██████╔╝${NC}"
-    echo -e "${PURPLE}   ╚═════╝ ╚═════╝      ╚═╝  ╚═╝╚═╝      ╚═════╝ ${NC}"
-    echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
+    echo -e "${PURPLE}   _____   _____   _____  _____   ____  ${NC}"
+    echo -e "${PURPLE}  |  __ \ / ____| |  __ \|  __ \ / __ \ ${NC}"
+    echo -e "${PURPLE}  | |__) | |  __  | |__) | |__) | |  | |${NC}"
+    echo -e "${PURPLE}  |  _  /| | |_ | |  ___/|  _  /| |  | |${NC}"
+    echo -e "${PURPLE}  | | \ \| |__| | | |    | | \ \| |__| |${NC}"
+    echo -e "${PURPLE}  |_|  \_\\_____| |_|    |_|  \_\\____/ ${NC}"
+    echo -e "${PURPLE}                                       ${NC}"
+    echo -e "${PURPLE}                                       ${NC}"
     echo -e "${PURPLE}  RG PRO — Xray VLESS+Reality Installer${NC}"
     echo -e "${PURPLE}  ─────────────────────────────────────────────${NC}"
     echo ""
